@@ -1,0 +1,7 @@
+{
+  "name": "Update Now 01/12-1",
+  "description": "ทำฟังชั่นเชื่อมต่อเครื่องชั่ง COM Port\n",
+  "requestFramePermissions": [
+    "serial"
+  ]
+}
