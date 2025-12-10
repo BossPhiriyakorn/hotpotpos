@@ -10,6 +10,8 @@ export interface ShopSettings {
   paymentQrCode: string | null; // QR Code for payment (PromptPay, etc.)
   welcomeTitle: string;
   welcomeSubtitle: string;
+  tareWeight: number; // น้ำหนักภาชนะ (กรัม) - สำหรับหักลบ
+  minWeight: number; // น้ำหนักขั้นต่ำ (กรัม) - จำกัดน้ำหนักขั้นต่ำ
 }
 
 export interface AuthSettings {
@@ -56,6 +58,8 @@ const DEFAULT_SHOP: ShopSettings = {
   paymentQrCode: null,
   welcomeTitle: 'ยินดีต้อนรับ',
   welcomeSubtitle: 'กดเพื่อเริ่มต้นสั่งอาหาร',
+  tareWeight: 250, // Default 250 กรัม
+  minWeight: 300, // Default 300 กรัม
 };
 
 const DEFAULT_AUTH: AuthSettings = {
@@ -111,6 +115,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             paymentQrCode: settings.payment_qr_code || shop.paymentQrCode,
             welcomeTitle: settings.welcome_title || shop.welcomeTitle,
             welcomeSubtitle: settings.welcome_subtitle || shop.welcomeSubtitle,
+            tareWeight: settings.tare_weight !== undefined ? Number(settings.tare_weight) : shop.tareWeight,
+            minWeight: settings.min_weight !== undefined ? Number(settings.min_weight) : shop.minWeight,
           };
           
           const layoutSettings: Partial<LayoutSettings> = {
@@ -176,6 +182,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
           paymentQrCode: settings.payment_qr_code || shop.paymentQrCode,
           welcomeTitle: settings.welcome_title || shop.welcomeTitle,
           welcomeSubtitle: settings.welcome_subtitle || shop.welcomeSubtitle,
+          tareWeight: settings.tare_weight !== undefined ? Number(settings.tare_weight) : shop.tareWeight,
+          minWeight: settings.min_weight !== undefined ? Number(settings.min_weight) : shop.minWeight,
         };
         
         const layoutSettings: Partial<LayoutSettings> = {

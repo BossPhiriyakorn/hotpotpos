@@ -100,7 +100,7 @@ export const updateKitchenOrderStatus = async (req: Request, res: Response) => {
       await client.query(
         `INSERT INTO kitchen_order_status (order_id, status, changed_by)
          VALUES ($1, $2, $3)`,
-        [id, status, req.user?.id || null]
+        [id, status, (req as any).user?.id || null]
       );
 
       // Update order status based on kitchen status
@@ -128,14 +128,27 @@ export const updateKitchenOrderStatus = async (req: Request, res: Response) => {
 
       await client.query('COMMIT');
 
-      // Send LINE notification if status changed to ready or done
-      if (status === 'ready' || status === 'done') {
+      // Send LINE notification when status changes
         try {
           const { notifyOrderStatusChange } = await import('./lineController.js');
-          await notifyOrderStatusChange(id, status === 'ready' ? 'ready' : 'done');
+        let notificationStatus: string;
+        
+        if (status === 'done') {
+          notificationStatus = 'done';
+        } else if (status === 'ready') {
+          notificationStatus = 'ready';
+        } else if (status === 'in-progress') {
+          notificationStatus = 'in_progress';
+        } else {
+          // Skip notification for other statuses
+          notificationStatus = '';
+        }
+        
+        if (notificationStatus) {
+          await notifyOrderStatusChange(id as any, notificationStatus as any);
+        }
         } catch (error) {
           console.warn('Failed to send LINE notification:', error);
-        }
       }
 
       res.json({

@@ -105,11 +105,11 @@ const Settings = () => {
       } catch (error) {
         console.error('Error compressing logo:', error);
         // Fallback to original if compression fails
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          updateShop({ logo: reader.result as string });
-        };
-        reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateShop({ logo: reader.result as string });
+      };
+      reader.readAsDataURL(file);
       }
     }
   };
@@ -124,11 +124,11 @@ const Settings = () => {
       } catch (error) {
         console.error('Error compressing QR code:', error);
         // Fallback to original if compression fails
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          updateShop({ memberQrCode: reader.result as string });
-        };
-        reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateShop({ memberQrCode: reader.result as string });
+      };
+      reader.readAsDataURL(file);
       }
     }
   };
@@ -143,12 +143,12 @@ const Settings = () => {
       } catch (error) {
         console.error('Error compressing payment QR code:', error);
         // Fallback to original if compression fails
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          updateShop({ paymentQrCode: reader.result as string });
-        };
-        reader.readAsDataURL(file);
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateShop({ paymentQrCode: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
     }
   };
 
@@ -162,6 +162,8 @@ const Settings = () => {
         { key: 'shop_name', value: shop.name || '' },
         { key: 'welcome_title', value: shop.welcomeTitle || '' },
         { key: 'welcome_subtitle', value: shop.welcomeSubtitle || '' },
+        { key: 'tare_weight', value: shop.tareWeight || 250, data_type: 'number' },
+        { key: 'min_weight', value: shop.minWeight || 300, data_type: 'number' },
         { key: 'soup_grid_cols', value: layout.soupGridCols },
         { key: 'show_spiciness', value: layout.showSpiciness },
         { key: 'show_addons', value: layout.showAddOns },
@@ -171,8 +173,8 @@ const Settings = () => {
 
       // Save all settings in parallel
       await Promise.all(
-        settingsToSave.map(({ key, value }) => 
-          apiService.updateSetting(key, value)
+        settingsToSave.map(({ key, value, data_type }) => 
+          apiService.updateSetting(key, value, data_type)
         )
       );
 
@@ -184,8 +186,8 @@ const Settings = () => {
         console.log('Settings saved but refresh failed (non-critical):', refreshError);
       }
 
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
     } catch (error: any) {
       console.error('Failed to save settings:', error);
       const errorMessage = error.message || 'ไม่สามารถบันทึกการตั้งค่าได้';
@@ -353,6 +355,42 @@ const Settings = () => {
                     />
                 </div>
             </div>
+
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+              <h3 className="font-bold text-slate-800 text-lg mb-4">ตั้งค่าการชั่งน้ำหนัก</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-2">น้ำหนักภาชนะ (Tare Weight)</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={shop.tareWeight || 250}
+                      onChange={(e) => updateShop({ tareWeight: Math.max(0, parseInt(e.target.value) || 0) })}
+                      className="w-full bg-white text-slate-900 border-2 border-slate-200 rounded-lg p-3 focus:border-[#BF0A30] focus:ring-[#BF0A30] outline-none"
+                    />
+                    <span className="text-slate-600 font-medium whitespace-nowrap">กรัม</span>
+                  </div>
+                  <p className="text-slate-400 text-sm mt-2">น้ำหนักภาชนะที่จะหักลบออกจากน้ำหนักที่ชั่งได้</p>
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-2">น้ำหนักขั้นต่ำ (Minimum Weight)</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={shop.minWeight || 300}
+                      onChange={(e) => updateShop({ minWeight: Math.max(0, parseInt(e.target.value) || 0) })}
+                      className="w-full bg-white text-slate-900 border-2 border-slate-200 rounded-lg p-3 focus:border-[#BF0A30] focus:ring-[#BF0A30] outline-none"
+                    />
+                    <span className="text-slate-600 font-medium whitespace-nowrap">กรัม</span>
+                  </div>
+                  <p className="text-slate-400 text-sm mt-2">น้ำหนักขั้นต่ำที่อนุญาตให้สั่งซื้อได้ (น้ำหนักสุทธิหลังหักภาชนะ)</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -511,9 +549,30 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Right: Access Logs */}
-            <div className="flex flex-col h-full max-h-[600px]">
-              <h3 className="font-bold text-slate-800 text-lg mb-4">ประวัติการเข้าใช้งาน (Access Logs)</h3>
+            {/* Right: Access Logs & Create User */}
+            <div className="flex flex-col h-full max-h-[600px] space-y-6">
+              <div>
+                <h3 className="font-bold text-slate-800 text-lg mb-4">จัดการผู้ใช้</h3>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Navigate to User Management by changing URL hash
+                    window.location.hash = 'users';
+                    // Trigger custom event for AdminScreen to handle
+                    window.dispatchEvent(new CustomEvent('navigateToView', { detail: 'users' }));
+                  }}
+                  className="block w-full bg-[#BF0A30] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#a00828] transition-colors text-center"
+                >
+                  + สร้างผู้ใช้ใหม่
+                </a>
+                <p className="text-slate-500 text-sm mt-2">
+                  สร้างผู้ใช้ใหม่พร้อมรหัสผ่านและเลือกสาขา
+                </p>
+              </div>
+              
+              <div className="flex flex-col h-full max-h-[400px]">
+                <h3 className="font-bold text-slate-800 text-lg mb-4">ประวัติการเข้าใช้งาน (Access Logs)</h3>
               <div className="flex-grow border border-slate-200 rounded-xl overflow-hidden bg-slate-50 flex flex-col">
                 <div className="overflow-y-auto flex-grow p-0">
                   <table className="w-full text-left text-sm">
@@ -546,6 +605,7 @@ const Settings = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
               </div>
             </div>
           </div>

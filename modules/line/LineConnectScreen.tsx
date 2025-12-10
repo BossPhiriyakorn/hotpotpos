@@ -10,40 +10,109 @@ const LineConnectScreen: React.FC = () => {
   useEffect(() => {
     const connect = async () => {
       try {
-        const orderId = searchParams.get('order_id');
-        const token = searchParams.get('token');
+        // ดึง order_id และ token จากหลายแหล่ง
+        let orderId: string | null = null;
+        let token: string | null = null;
+
+        // 1. ดึงจาก hash fragment ก่อน (สำหรับ LIFF URL ที่ใช้ hash)
+        if (window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          orderId = hashParams.get('order_id');
+          token = hashParams.get('token');
+        }
+
+        // 2. ลองดึงจาก LIFF query parameters (ถ้า LIFF SDK พร้อม)
+        if (!orderId && typeof window !== 'undefined' && (window as any).liff) {
+          try {
+            const liffId = import.meta.env.VITE_LINE_LIFF_ID || '';
+            
+            if (liffId) {
+              // Initialize LIFF
+              await (window as any).liff.init({ liffId });
+              
+              // ดึง query parameters จาก LIFF
+              orderId = (window as any).liff.getQueryParam('order_id') || orderId;
+              token = (window as any).liff.getQueryParam('token') || token;
+            }
+          } catch (error) {
+            console.error('LIFF init error:', error);
+          }
+        }
+
+        // 3. Fallback: ดึงจาก URL search params (React Router)
+        if (!orderId) {
+          orderId = searchParams.get('order_id');
+          token = searchParams.get('token');
+        }
+
+        // 4. Fallback: ดึงจาก window.location.search (ถ้ายังไม่มี)
+        if (!orderId) {
+          const urlParams = new URLSearchParams(window.location.search);
+          orderId = urlParams.get('order_id');
+          token = urlParams.get('token');
+        }
 
         if (!orderId) {
           setStatus('error');
           setMessage('ไม่พบข้อมูลออเดอร์');
+          console.error('Order ID not found. URL:', window.location.href);
+          console.error('Search params:', window.location.search);
+          console.error('Hash:', window.location.hash);
           return;
         }
 
-        // Get LINE User ID from query parameter
-        // When scanning QR Code from LINE app, LINE will add line_user_id parameter
-        // If not available, we'll try to get from LINE SDK or prompt user
-        let lineUserId = searchParams.get('line_user_id');
+        // Get LINE User ID from LIFF SDK
+        let lineUserId: string | null = null;
         
-        // If LINE User ID is not in URL, try to get from LINE SDK
-        // For now, we'll show an error if not provided
-        // In production, integrate with LINE Login or LINE SDK
-        if (!lineUserId) {
-          // Try to get from window.liff (LINE Front-end Framework)
-          if (typeof window !== 'undefined' && (window as any).liff) {
-            try {
-              const profile = await (window as any).liff.getProfile();
-              lineUserId = profile.userId;
-            } catch (error) {
-              console.error('Failed to get LINE profile:', error);
+        // Try to get from window.liff (LINE Front-end Framework)
+        if (typeof window !== 'undefined' && (window as any).liff) {
+          try {
+            // Get LIFF ID from environment variable
+            const liffId = import.meta.env.VITE_LINE_LIFF_ID || '';
+            
+            if (liffId) {
+              // Initialize LIFF (ถ้ายังไม่ได้ init)
+              try {
+                await (window as any).liff.init({ liffId });
+              } catch (initError) {
+                // LIFF อาจจะ init แล้ว
+                console.log('LIFF may already be initialized');
+              }
+              
+              // Check if logged in
+              if ((window as any).liff.isLoggedIn()) {
+                // Get user profile
+                const profile = await (window as any).liff.getProfile();
+                lineUserId = profile.userId;
+              } else {
+                // Login if not logged in
+                (window as any).liff.login();
+                return;
+              }
+            } else {
+              // Try to get profile without init (if already initialized)
+              try {
+                const profile = await (window as any).liff.getProfile();
+                lineUserId = profile.userId;
+              } catch (error) {
+                console.error('LIFF not initialized:', error);
+              }
             }
+          } catch (error: any) {
+            console.error('Failed to get LINE profile:', error);
+            // If LIFF init fails, try to get from URL parameter as fallback
+            lineUserId = searchParams.get('line_user_id');
           }
-          
-          // If still no LINE User ID, show error
-          if (!lineUserId) {
-            setStatus('error');
-            setMessage('ไม่พบ LINE User ID กรุณาสแกน QR Code ผ่าน LINE App');
-            return;
-          }
+        } else {
+          // Fallback: Try to get from URL parameter
+          lineUserId = searchParams.get('line_user_id');
+        }
+        
+        // If still no LINE User ID, show error
+        if (!lineUserId) {
+          setStatus('error');
+          setMessage('ไม่พบ LINE User ID กรุณาสแกน QR Code ผ่าน LINE App');
+          return;
         }
 
         // Connect LINE to order

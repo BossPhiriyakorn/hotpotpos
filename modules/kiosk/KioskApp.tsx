@@ -38,7 +38,7 @@ const KioskApp: React.FC = () => {
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   
   // Move useScale here to maintain connection state across screen changes
-  const { weightKg, isConnected, connect } = useScale();
+  const { weightKg, isConnected, connect, resetWeight } = useScale();
 
   const updateOrder = useCallback((updates: Partial<Order>) => {
     setOrder(prevOrder => {
@@ -65,8 +65,9 @@ const KioskApp: React.FC = () => {
 
   const resetOrder = useCallback(() => {
     setOrder(initialOrderState);
+    resetWeight(); // Reset weight to 0 when starting new order
     navigateTo(AppScreen.Welcome);
-  }, [navigateTo]);
+  }, [navigateTo, resetWeight]);
   
   const screenContent = useMemo(() => {
     switch (screen) {
@@ -95,6 +96,7 @@ const KioskApp: React.FC = () => {
                 } else {
                   updateOrder({ queueNumber });
                 }
+                resetWeight(); // Reset weight to 0 after payment success
                 navigateTo(AppScreen.PaymentSuccess);
             }} 
         />;
@@ -103,8 +105,8 @@ const KioskApp: React.FC = () => {
       case AppScreen.MemberScan:
         return <MemberScanScreen 
           order={order}
-          onNoNotification={resetOrder}
-          onRequestNotification={() => navigateTo(AppScreen.LineNotification)}
+          onReceiveNotification={() => navigateTo(AppScreen.LineNotification)}
+          onSkipNotification={resetOrder}
         />;
       case AppScreen.LineNotification:
         return <LineNotificationScreen 
@@ -115,7 +117,7 @@ const KioskApp: React.FC = () => {
       default:
         return <WelcomeScreen onStart={() => navigateTo(AppScreen.LanguageSelection)} />;
     }
-  }, [screen, order, navigateTo, resetOrder, updateOrder, weightKg, isConnected, connect]);
+  }, [screen, order, navigateTo, resetOrder, updateOrder, weightKg, isConnected, connect, resetWeight]);
 
   const animationClass = direction === 'forward' ? 'animate-[slide-in-right_0.5s_ease-in-out]' : 'animate-[slide-in-left_0.5s_ease-in-out]';
 

@@ -15,6 +15,7 @@ export interface UseScaleResult {
   isConnected: boolean;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  resetWeight: () => void;
 }
 
 export const useScale = (): UseScaleResult => {
@@ -46,11 +47,13 @@ export const useScale = (): UseScaleResult => {
     for (const line of lines) {
         if (!line.trim()) continue;
         
-        // Regex to match decimal numbers (e.g. 1.23, 0.500)
-        // Matches typical scale outputs like "ST,GS,+  0.500kg"
-        const match = line.match(/([0-9]+\.?[0-9]*)/);
+        // Regex to match decimal numbers (e.g. 1.23, 0.500, 0.00)
+        // Matches typical scale outputs like "ST,GS,+  0.500kg" or "0.000kg"
+        // Updated to match 0.00 and other decimal values including zero
+        const match = line.match(/([0-9]+\.?[0-9]*|0\.0+)/);
         if (match && match[1]) {
             const val = parseFloat(match[1]);
+            // Accept all values including 0.00 (real-time weight reading)
             if (!isNaN(val)) {
                 setWeightKg(val);
             }
@@ -175,6 +178,10 @@ export const useScale = (): UseScaleResult => {
     setIsConnected(false);
   };
 
+  const resetWeight = useCallback(() => {
+    setWeightKg(0);
+  }, []);
+
   useEffect(() => {
     autoConnect();
     return () => {
@@ -187,5 +194,5 @@ export const useScale = (): UseScaleResult => {
     };
   }, []);
 
-  return { weightKg, isConnected, connect, disconnect };
+  return { weightKg, isConnected, connect, disconnect, resetWeight };
 };

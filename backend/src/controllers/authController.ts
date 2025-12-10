@@ -15,9 +15,12 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Get user from database
+    // Get user from database with branch information
     const result = await pool.query(
-      'SELECT * FROM users WHERE username = $1 AND is_active = true',
+      `SELECT u.*, b.id as branch_id, b.name as branch_name, b.code as branch_code
+       FROM users u
+       LEFT JOIN branches b ON u.branch_id = b.id
+       WHERE u.username = $1 AND u.is_active = true`,
       [username]
     );
 
@@ -85,6 +88,9 @@ export const login = async (req: Request, res: Response) => {
           id: user.id,
           username: user.username,
           userType: user.user_type,
+          branchId: user.branch_id || null,
+          branchName: user.branch_name || null,
+          branchCode: user.branch_code || null,
         },
       },
     });
@@ -104,9 +110,14 @@ export const getCurrentUser = async (req: any, res: Response) => {
       });
     }
 
-    const result = await pool.query('SELECT id, username, user_type, is_active FROM users WHERE id = $1', [
-      req.user.id,
-    ]);
+    const result = await pool.query(
+      `SELECT u.id, u.username, u.user_type, u.is_active, u.branch_id, 
+              b.name as branch_name, b.code as branch_code
+       FROM users u
+       LEFT JOIN branches b ON u.branch_id = b.id
+       WHERE u.id = $1`,
+      [req.user.id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({

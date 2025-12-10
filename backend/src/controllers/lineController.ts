@@ -40,8 +40,19 @@ export const generateOrderQRCode = async (req: Request, res: Response) => {
     );
 
     // Generate QR Code URL
+    // ใช้ LINE Login (LIFF) URL ถ้ามี LIFF ID
     const baseUrl = process.env.LINE_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
-    const qrData = `${baseUrl}/line/connect?order_id=${order.id}&token=${token}`;
+    const liffId = process.env.LINE_LIFF_ID || '';
+    
+    let qrData: string;
+    if (liffId) {
+      // ใช้ LIFF URL แต่ส่ง parameters ผ่าน hash fragment
+      // LIFF SDK สามารถดึง hash parameters ได้
+      qrData = `https://liff.line.me/${liffId}#order_id=${order.id}&token=${token}`;
+    } else {
+      // Fallback: ใช้ URL ธรรมดา (สำหรับ development)
+      qrData = `${baseUrl}/line/connect?order_id=${order.id}&token=${token}`;
+    }
 
     // Generate QR Code image (Base64)
     const qrCodeImage = await QRCode.toDataURL(qrData, {

@@ -122,7 +122,20 @@ export const createOrder = async (req: Request, res: Response) => {
       note,
       payment_method,
       payment_reference,
+      branch_id, // Get branch_id from request body (for kiosk)
     } = req.body;
+
+    // Get branch_id from authenticated user if not provided in body (for CMS/API)
+    let finalBranchId = branch_id;
+    if (!finalBranchId && (req as any).user) {
+      const userResult = await client.query(
+        'SELECT branch_id FROM users WHERE id = $1',
+        [(req as any).user.id]
+      );
+      if (userResult.rows.length > 0 && userResult.rows[0].branch_id) {
+        finalBranchId = userResult.rows[0].branch_id;
+      }
+    }
 
     // Validation
     if (!weight_grams || weight_grams <= 0) {
@@ -216,8 +229,9 @@ export const createOrder = async (req: Request, res: Response) => {
         vat_rate, vat_amount, total_price,
         soup_id, spice_level_id,
         dining_location, table_number, cooking_style, note,
-        order_status, payment_status, payment_method, payment_reference
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        order_status, payment_status, payment_method, payment_reference,
+        branch_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *`,
       [
         weight_grams,
@@ -239,6 +253,7 @@ export const createOrder = async (req: Request, res: Response) => {
         'pending',
         payment_method || null,
         payment_reference || null,
+        finalBranchId || null,
       ]
     );
 
@@ -291,6 +306,14 @@ export const createOrder = async (req: Request, res: Response) => {
     );
 
     await client.query('COMMIT');
+
+    // Send LINE notification when order is created (queued)
+    try {
+      const { notifyOrderStatusChange } = await import('./lineController.js');
+      await notifyOrderStatusChange(order.id, 'queued');
+    } catch (error) {
+      console.warn('Failed to send LINE notification:', error);
+    }
 
     // Get full order with relationships
     const fullOrderResult = await client.query(

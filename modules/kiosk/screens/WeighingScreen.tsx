@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Order } from '../../../types';
 import PrimaryButton from '../../../components/ui/PrimaryButton';
 import { useLanguage } from '../../../store/LanguageContext';
+import { useSettings } from '../../../store/SettingsContext';
 
 interface WeighingScreenProps {
   order: Order;
@@ -22,23 +23,37 @@ const WeighingScreen: React.FC<WeighingScreenProps> = ({
   connect
 }) => {
   const { t } = useLanguage();
+  const { shop } = useSettings();
   const [secretClicks, setSecretClicks] = useState(0);
   const [priceClicks, setPriceClicks] = useState(0);
   const priceClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Get settings with defaults
+  const tareWeight = shop.tareWeight || 250; // น้ำหนักภาชนะ (กรัม)
+  const minWeight = shop.minWeight || 300; // น้ำหนักขั้นต่ำ (กรัม)
+
   // Convert Kg from scale to Grams for display and calculation
   const weightGrams = Math.floor(weightKg * 1000);
+  
+  // Calculate net weight (after deducting tare weight)
+  const netWeightGrams = Math.max(0, weightGrams - tareWeight);
+  
+  // Check if weight meets minimum requirement
+  const meetsMinWeight = netWeightGrams >= minWeight;
+  const weightWarning = netWeightGrams > 0 && !meetsMinWeight 
+    ? `น้ำหนักขั้นต่ำ ${minWeight} กรัม (น้ำหนักปัจจุบัน: ${netWeightGrams} กรัม)`
+    : '';
 
   useEffect(() => {
-    // Formula: Weight (Grams) / 100 * pricePer100g
-    // Example: 0.5kg -> 500g -> 5 units of 100g -> 5 * 29 = 145 Baht
-    const basePrice = (weightGrams / 100) * order.pricePer100g;
+    // Formula: Net Weight (Grams) / 100 * pricePer100g
+    // Example: 0.5kg -> 500g -> 250g (after tare) -> 2.5 units of 100g -> 2.5 * 29 = 72.5 Baht
+    const basePrice = (netWeightGrams / 100) * order.pricePer100g;
     
     setOrder({ 
-        weight: weightGrams, 
+        weight: netWeightGrams, // Store net weight (after tare deduction)
         basePrice: parseFloat(basePrice.toFixed(2)) 
     });
-  }, [weightGrams, order.pricePer100g, setOrder]);
+  }, [netWeightGrams, order.pricePer100g, setOrder]);
 
   // Secret trigger: Click 5 times to open USB connection dialog
   const handleSecretTrigger = () => {
@@ -122,13 +137,14 @@ const WeighingScreen: React.FC<WeighingScreenProps> = ({
 
             <p className="text-3xl font-semibold text-[#BF0A30] mb-8">{t('weighing.price_per_unit')}</p>
 
-            <div className="bg-slate-100 rounded-2xl p-10 w-full max-w-2xl mb-12 shadow-inner border border-slate-200">
+            <div className="bg-slate-100 rounded-2xl p-10 w-full max-w-2xl mb-8 shadow-inner border border-slate-200">
                 <div className="grid grid-cols-2 gap-8 divide-x-2 divide-slate-300">
                 <div>
                     <p className="text-3xl font-medium text-slate-600 mb-2">{t('weighing.weight_label')}</p>
                     <p className="text-8xl font-extrabold text-slate-900 tracking-tighter transition-all duration-300">
-                        {order.weight}
+                        {netWeightGrams.toFixed(2)}
                     </p>
+                    <p className="text-lg text-slate-500 mt-2">กรัม</p>
                 </div>
                 <div className="pl-8">
                     <p className="text-3xl font-medium text-slate-600 mb-2">{t('weighing.price_label')}</p>
@@ -139,19 +155,38 @@ const WeighingScreen: React.FC<WeighingScreenProps> = ({
                     >
                         {order.basePrice.toFixed(2)}
                     </p>
+                    <p className="text-lg text-slate-500 mt-2">บาท</p>
                 </div>
                 </div>
             </div>
+
+            {/* Tare Weight Info */}
+            {tareWeight > 0 && (
+              <div className="mb-4 text-slate-600 bg-slate-50 px-4 py-2 rounded-lg text-sm font-medium">
+                💡 น้ำหนักนี้หักลบภาชนะ {tareWeight} กรัม
+              </div>
+            )}
+
+            {/* Weight Warning */}
+            {weightWarning && (
+              <div className="mb-4 text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg text-sm font-medium">
+                ⚠️ {weightWarning}
+              </div>
+            )}
             
             <div className="flex flex-col gap-4 items-center">
                 <PrimaryButton 
                     onClick={onNext} 
-                    disabled={order.weight === 0 || !isConnected} 
+                    disabled={!meetsMinWeight || !isConnected || netWeightGrams === 0} 
                     className="text-2xl py-6 px-16"
                 >
-                    {isConnected 
-                        ? (order.weight > 0 ? t('weighing.confirm') : t('weighing.place_item')) 
-                        : t('weighing.not_ready')}
+                    {!isConnected 
+                        ? t('weighing.not_ready')
+                        : !meetsMinWeight && netWeightGrams > 0
+                        ? `น้ำหนักต่ำกว่าขั้นต่ำ (${minWeight}g)`
+                        : netWeightGrams === 0
+                        ? t('weighing.place_item')
+                        : t('weighing.confirm')}
                 </PrimaryButton>
 
                 {/* Demo Skip Button - Hidden for production, use secret click on price instead */}

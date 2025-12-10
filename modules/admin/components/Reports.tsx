@@ -29,24 +29,50 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
   // Input states (what the user is typing/selecting) - Default to First Day of Month
   const [inputStartDate, setInputStartDate] = useState(getFirstDayOfMonthStr());
   const [inputEndDate, setInputEndDate] = useState(getTodayStr());
+  const [inputBranchId, setInputBranchId] = useState<string>('all');
 
   // Filter states (what is actually applied to the data) - Default to First Day of Month
   const [filterStartDate, setFilterStartDate] = useState(getFirstDayOfMonthStr());
   const [filterEndDate, setFilterEndDate] = useState(getTodayStr());
+  const [filterBranchId, setFilterBranchId] = useState<string>('all');
 
   // Data states
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [productSales, setProductSales] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
     setFilterStartDate(inputStartDate);
     setFilterEndDate(inputEndDate);
-    await fetchData(inputStartDate, inputEndDate);
+    setFilterBranchId(inputBranchId);
+    await fetchData(inputStartDate, inputEndDate, inputBranchId);
   };
 
-  const fetchData = async (startDate: string, endDate: string) => {
+  // Auto-search when branch filter changes
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBranchId = e.target.value;
+    setInputBranchId(newBranchId);
+    // Auto-trigger search when branch changes
+    setFilterBranchId(newBranchId);
+    fetchData(inputStartDate, inputEndDate, newBranchId);
+  };
+
+  // Fetch branches on mount
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const branchesData = await apiService.getBranches();
+        setBranches(branchesData || []);
+      } catch (err) {
+        console.error('Failed to fetch branches:', err);
+      }
+    };
+    fetchBranches();
+  }, []);
+
+  const fetchData = async (startDate: string, endDate: string, branchId: string = 'all') => {
     try {
       setLoading(true);
       setError(null);
@@ -59,9 +85,14 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
         return;
       }
 
+      const params: any = { startDate, endDate };
+      if (branchId && branchId !== 'all') {
+        params.branchId = branchId;
+      }
+
       const [ordersData, productsData] = await Promise.all([
-        apiService.getOrdersForReports({ startDate, endDate }),
-        apiService.getProductSales({ startDate, endDate }),
+        apiService.getOrdersForReports(params),
+        apiService.getProductSales(params),
       ]);
 
       setFilteredOrders(ordersData || []);
@@ -86,16 +117,16 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
 
   useEffect(() => {
     // Initial fetch
-    fetchData(filterStartDate, filterEndDate);
+    fetchData(filterStartDate, filterEndDate, filterBranchId);
 
     // Auto-refresh every 30 seconds to keep data up-to-date
     const interval = setInterval(() => {
-      fetchData(filterStartDate, filterEndDate);
+      fetchData(filterStartDate, filterEndDate, filterBranchId);
     }, 30000); // 30 seconds
 
     // Cleanup interval on unmount or when date range changes
     return () => clearInterval(interval);
-  }, [filterStartDate, filterEndDate]);
+  }, [filterStartDate, filterEndDate, filterBranchId]);
 
   // Common calculations
   const totalSales = filteredOrders.reduce((a, b) => a + b.total, 0);
@@ -117,7 +148,7 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
 
   const handleExportReceipts = () => {
       const headers = [
-          'วันที่', 'เวลา', 'เลขรายการคำสั่งซื้อ', 'เลขที่ใบเสร็จ', 'ช่องทาง', 'ช่องทางการขาย',
+          'วันที่', 'เวลา', 'เลขรายการคำสั่งซื้อ', 'เลขที่ใบเสร็จ', 'ช่องทาง', 'สถานที่ขาย',
           'ยอดขายรวม', 'ยอดขายสุทธิ', 'จำนวนสินค้า', 'ช่องทางชำระเงิน', 'ค่าบริการเพิ่มเติม',
           'ภาษี', 'ส่วนลด', 'การปัดเศษ', 'ทิป', 'ค่าจัดส่ง', 'ยอดที่ได้รับ'
       ];
@@ -131,7 +162,7 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
               order.id,
               order.receiptId,
               order.channel,
-              order.salesChannel,
+              order.branchName || 'ไม่ระบุสาขา',
               order.total.toFixed(2),
               netSales.toFixed(2),
               order.itemCount,
@@ -146,8 +177,14 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
           ].join(',');
       });
 
+      // Get branch name for filename
+      const selectedBranch = branches.find(b => b.id.toString() === filterBranchId);
+      const branchSuffix = filterBranchId !== 'all' && selectedBranch 
+        ? `_${selectedBranch.name.replace(/\s+/g, '_')}` 
+        : '';
+      
       const csvContent = [headers.join(','), ...rows].join('\n');
-      downloadCSV(csvContent, `receipts_report_${filterStartDate}_to_${filterEndDate}.csv`);
+      downloadCSV(csvContent, `receipts_report_${filterStartDate}_to_${filterEndDate}${branchSuffix}.csv`);
   };
   
   // Group by Date for Daily Summary (Used in Tax Report logic and Export)
@@ -183,8 +220,14 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
           day.vat.toFixed(2)
       ].join(','));
 
+      // Get branch name for filename
+      const selectedBranch = branches.find(b => b.id.toString() === filterBranchId);
+      const branchSuffix = filterBranchId !== 'all' && selectedBranch 
+        ? `_${selectedBranch.name.replace(/\s+/g, '_')}` 
+        : '';
+
       const csvContent = [headers.join(','), ...rows].join('\n');
-      downloadCSV(csvContent, `tax_report_${filterStartDate}_to_${filterEndDate}.csv`);
+      downloadCSV(csvContent, `tax_report_${filterStartDate}_to_${filterEndDate}${branchSuffix}.csv`);
   };
 
 
@@ -335,6 +378,21 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                           onChange={e => setInputEndDate(e.target.value)}
                           style={{ colorScheme: 'light' }}
                         />
+                    </div>
+                    <div className="flex-1 min-w-[150px]">
+                        <label className="block text-sm font-medium text-slate-600 mb-1">สาขา</label>
+                        <select
+                          value={inputBranchId}
+                          onChange={handleBranchChange}
+                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]"
+                        >
+                          <option value="all">ทั้งหมด</option>
+                          {branches.map((branch) => (
+                            <option key={branch.id} value={branch.id}>
+                              {branch.name} {branch.code ? `(${branch.code})` : ''}
+                            </option>
+                          ))}
+                        </select>
                     </div>
                     <button 
                         onClick={handleSearch}
@@ -494,6 +552,21 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                           onChange={e => setInputEndDate(e.target.value)}
                           style={{ colorScheme: 'light' }}
                         />
+                    </div>
+                    <div className="flex-1 min-w-[150px]">
+                        <label className="block text-sm font-medium text-slate-600 mb-1">สาขา</label>
+                        <select
+                          value={inputBranchId}
+                          onChange={handleBranchChange}
+                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]"
+                        >
+                          <option value="all">ทั้งหมด</option>
+                          {branches.map((branch) => (
+                            <option key={branch.id} value={branch.id}>
+                              {branch.name} {branch.code ? `(${branch.code})` : ''}
+                            </option>
+                          ))}
+                        </select>
                     </div>
                      <button 
                         onClick={handleSearch}
@@ -677,6 +750,21 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                         style={{ colorScheme: 'light' }}
                     />
                 </div>
+                <div className="flex-1 min-w-[150px]">
+                    <label className="block text-sm font-medium text-slate-600 mb-1">สาขา</label>
+                    <select
+                      value={inputBranchId}
+                      onChange={handleBranchChange}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]"
+                    >
+                      <option value="all">ทั้งหมด</option>
+                      {branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} {branch.code ? `(${branch.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                </div>
                 <button 
                     onClick={handleSearch}
                     className="w-full md:w-auto bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-700 transition-colors"
@@ -714,7 +802,7 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                             <th className="px-4 py-4 font-bold text-slate-600 whitespace-nowrap">เลขรายการคำสั่งซื้อ</th>
                             <th className="px-4 py-4 font-bold text-slate-600 whitespace-nowrap">เลขที่ใบเสร็จ</th>
                             <th className="px-4 py-4 font-bold text-slate-600 whitespace-nowrap">ช่องทาง</th>
-                            <th className="px-4 py-4 font-bold text-slate-600 whitespace-nowrap">ช่องทางการขาย</th>
+                            <th className="px-4 py-4 font-bold text-slate-600 whitespace-nowrap">สถานที่ขาย</th>
                             <th className="px-4 py-4 font-bold text-slate-600 text-right whitespace-nowrap">ยอดขายรวม</th>
                             <th className="px-4 py-4 font-bold text-slate-600 text-right whitespace-nowrap" title="ยอดขายก่อนรวมภาษี">ยอดขายสุทธิ</th>
                             <th className="px-4 py-4 font-bold text-slate-600 text-right whitespace-nowrap">จำนวน</th>
@@ -742,7 +830,9 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                                     <td className="px-4 py-4 font-medium text-slate-800 whitespace-nowrap text-sm">{order.id}</td>
                                     <td className="px-4 py-4 text-slate-500 whitespace-nowrap text-sm">{order.receiptId}</td>
                                     <td className="px-4 py-4 text-slate-500 whitespace-nowrap text-sm">{order.channel}</td>
-                                    <td className="px-4 py-4 text-slate-500 whitespace-nowrap text-sm">{order.salesChannel}</td>
+                                    <td className="px-4 py-4 text-slate-700 whitespace-nowrap text-sm font-medium">
+                                      {order.branchName || 'ไม่ระบุสาขา'}
+                                    </td>
                                     <td className="px-4 py-4 font-bold text-[#BF0A30] text-right whitespace-nowrap text-sm">฿{order.total.toLocaleString()}</td>
                                     <td className="px-4 py-4 text-slate-700 text-right whitespace-nowrap text-sm">฿{netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td className="px-4 py-4 text-slate-500 text-right whitespace-nowrap text-sm">{order.itemCount}</td>

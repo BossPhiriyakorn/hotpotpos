@@ -95,7 +95,7 @@ const Dashboard = () => {
         setTopItems([]);
       } finally {
         setLoading(false);
-      }
+    }
     };
 
     // Initial fetch
@@ -393,6 +393,7 @@ const Dashboard = () => {
               <tr className="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider">
                 <th className="px-6 py-3 font-medium whitespace-nowrap">รหัสออเดอร์</th>
                 <th className="px-6 py-3 font-medium whitespace-nowrap">วันที่ / เวลา</th>
+                <th className="px-6 py-3 font-medium whitespace-nowrap">สถานที่ขาย</th>
                 <th className="px-6 py-3 font-medium whitespace-nowrap">จำนวนสินค้า</th>
                 <th className="px-6 py-3 font-medium whitespace-nowrap">การชำระเงิน</th>
                 <th className="px-6 py-3 font-medium text-right whitespace-nowrap">ยอดรวม</th>
@@ -406,6 +407,9 @@ const Dashboard = () => {
                       <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
                           {order.date} <span className="text-xs text-slate-400">({order.time})</span>
                       </td>
+                      <td className="px-6 py-4 text-slate-700 whitespace-nowrap font-medium">
+                        {order.branchName || 'ไม่ระบุสาขา'}
+                      </td>
                       <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{order.itemCount} รายการ</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${order.paymentMethod === 'Cash' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -417,7 +421,7 @@ const Dashboard = () => {
                   ))
               ) : (
                   <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">
+                      <td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">
                           ไม่มีรายการออเดอร์สำหรับวันที่เลือก
                       </td>
                   </tr>

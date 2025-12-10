@@ -263,27 +263,95 @@ class ApiService {
     return this.request('/api/settings');
   }
 
-  async updateSetting(key: string, value: any) {
+  async updateSetting(key: string, value: any, data_type?: string) {
     return this.request(`/api/settings/${key}`, {
       method: 'PUT',
-      body: JSON.stringify({ value }),
+      body: JSON.stringify({ value, data_type }),
     });
   }
 
   // Reports APIs
-  async getDashboardSummary(params?: { startDate?: string; endDate?: string }) {
+  async getDashboardSummary(params?: { startDate?: string; endDate?: string; branchId?: string | number }) {
     const query = new URLSearchParams(params as any).toString();
     return this.request(`/api/reports/dashboard/summary${query ? `?${query}` : ''}`);
   }
 
-  async getProductSales(params?: { startDate?: string; endDate?: string }) {
+  async getProductSales(params?: { startDate?: string; endDate?: string; branchId?: string | number }) {
     const query = new URLSearchParams(params as any).toString();
     return this.request(`/api/reports/products${query ? `?${query}` : ''}`);
   }
 
-  async getOrdersForReports(params?: { startDate?: string; endDate?: string; status?: string }) {
+  async getOrdersForReports(params?: { startDate?: string; endDate?: string; status?: string; branchId?: string | number }) {
     const query = new URLSearchParams(params as any).toString();
     return this.request(`/api/reports/orders${query ? `?${query}` : ''}`);
+  }
+
+  // Branch API
+  async getBranches(includeInactive?: boolean) {
+    const query = includeInactive ? '?includeInactive=true' : '';
+    return this.request(`/api/branches${query}`);
+  }
+
+  async getBranchById(id: number) {
+    return this.request(`/api/branches/${id}`);
+  }
+
+  async createBranch(data: { name: string; code?: string; address?: string; phone?: string; is_active?: boolean }) {
+    return this.request('/api/branches', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateBranch(id: number, data: { name?: string; code?: string; address?: string; phone?: string; is_active?: boolean }) {
+    return this.request(`/api/branches/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBranch(id: number) {
+    return this.request(`/api/branches/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getBranchStats(id: number, params?: { startDate?: string; endDate?: string }) {
+    const query = new URLSearchParams(params as any).toString();
+    return this.request(`/api/branches/${id}/stats${query ? `?${query}` : ''}`);
+  }
+
+  // User API
+  async getUsers() {
+    return this.request('/api/users');
+  }
+
+  async getUserById(id: number) {
+    return this.request(`/api/users/${id}`);
+  }
+
+  async createUser(data: { username: string; password: string; user_type: string; branch_id?: number | null; is_active?: boolean }) {
+    return this.request('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateUser(id: number, data: { username?: string; password?: string; user_type?: string; branch_id?: number | null; is_active?: boolean }) {
+    return this.request(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(id: number) {
+    return this.request(`/api/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async generatePassword() {
+    return this.request('/api/users/generate-password');
   }
 
   // LINE API

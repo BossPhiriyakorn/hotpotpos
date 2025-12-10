@@ -1,7 +1,11 @@
 # 📱 คู่มือการตั้งค่า LINE Messaging API
 
 ## 📋 สรุป
-ระบบแจ้งเตือนคิวผ่าน LINE ใช้ **LINE Messaging API** เพื่อส่งข้อความแจ้งเตือนให้ลูกค้าเมื่อออเดอร์เปลี่ยนสถานะ
+ระบบแจ้งเตือนคิวผ่าน LINE ใช้ **2 LINE Channels**:
+1. **LINE Messaging API Channel** - สำหรับส่งข้อความแจ้งเตือน
+2. **LINE Login Channel** - สำหรับ LIFF App เพื่อรับ LINE User ID
+
+⚠️ **สำคัญ**: LINE เปลี่ยนนโยบายแล้ว - Messaging API Channel ไม่สามารถเพิ่ม LIFF apps ได้ ต้องใช้ LINE Login Channel แยก
 
 ---
 
@@ -36,7 +40,7 @@
 4. ตั้งชื่อ Provider (เช่น "Hotpot Kiosk System")
 5. กด **"Create"**
 
-### 2.2 สร้าง Messaging API Channel
+### 2.2 สร้าง Messaging API Channel (Channel 1)
 1. ใน Provider ที่สร้าง → กด **"Add a channel"**
 2. เลือก **"Messaging API"**
 3. กรอกข้อมูล:
@@ -48,8 +52,8 @@
 4. กด **"Create"**
 5. อ่านและยอมรับ **Terms of Use**
 
-### 2.3 ดู Credentials
-1. ไปที่ Channel ที่สร้าง → แท็บ **"Basic settings"**
+### 2.3 ดู Messaging API Credentials
+1. ไปที่ Messaging API Channel → แท็บ **"Basic settings"**
 2. Copy ค่าเหล่านี้:
    - **Channel ID** → ใส่ใน `LINE_CHANNEL_ID`
    - **Channel secret** → ใส่ใน `LINE_CHANNEL_SECRET`
@@ -59,13 +63,44 @@
    - **สำคัญ**: เลือก **"Long-lived token"** (ใช้ได้นาน)
 
 ### 2.4 ตั้งค่า Webhook (Optional)
-1. ไปที่แท็บ **"Messaging API"**
+1. ไปที่ Messaging API Channel → แท็บ **"Messaging API"**
 2. Scroll ลงไปที่ **"Webhook settings"**
 3. ใส่ Webhook URL: `https://your-domain.com/api/line/webhook`
    - Development: ใช้ ngrok (เช่น `https://abc123.ngrok.io/api/line/webhook`)
    - Production: ใช้ domain จริง
 4. กด **"Update"**
 5. Enable Webhook (เปิดสวิตช์)
+
+### 2.5 สร้าง LINE Login Channel (Channel 2)
+1. ใน Provider เดียวกัน → กด **"Add a channel"**
+2. เลือก **"LINE Login"**
+3. กรอกข้อมูล:
+   - **Channel name**: "Hotpot Kiosk Login"
+   - **Channel description**: "ระบบรับ LINE User ID"
+   - **Category**: "Food & Drink"
+   - **Subcategory**: "Restaurant"
+   - **Email**: อีเมลของลูกค้า
+4. กด **"Create"**
+5. อ่านและยอมรับ **Terms of Use**
+
+### 2.6 ดู LINE Login Credentials
+1. ไปที่ LINE Login Channel → แท็บ **"Basic settings"**
+2. Copy ค่าเหล่านี้:
+   - **Channel ID** → ใส่ใน `LINE_LOGIN_CHANNEL_ID`
+   - **Channel secret** → ใส่ใน `LINE_LOGIN_CHANNEL_SECRET`
+
+### 2.7 สร้าง LIFF App ใน LINE Login Channel
+1. ไปที่ LINE Login Channel → แท็บ **"LINE Login"**
+2. Scroll ลงไปที่ **"LIFF apps"**
+3. กด **"Add"** → สร้าง LIFF App:
+   - **LIFF app name**: "Hotpot Order Connect"
+   - **Size**: `Full` หรือ `Tall` (แนะนำ `Full`)
+   - **Endpoint URL**: `https://your-domain.com/line/connect`
+     - Development: `http://localhost:5173/line/connect`
+     - Production: `https://your-domain.com/line/connect`
+   - **Scope**: เลือก `profile` และ `openid`
+4. กด **"Create"**
+5. Copy **LIFF ID** → ใส่ใน `LINE_LIFF_ID`
 
 ---
 
@@ -76,25 +111,42 @@
 
 ```env
 # ============================================
-# LINE Messaging API Configuration
+# LINE Messaging API Configuration (Channel 1)
 # ============================================
-LINE_CHANNEL_ID=your_line_channel_id_here
-LINE_CHANNEL_SECRET=your_line_channel_secret_here
-LINE_CHANNEL_ACCESS_TOKEN=your_line_channel_access_token_here
+LINE_CHANNEL_ID=your_messaging_api_channel_id
+LINE_CHANNEL_SECRET=your_messaging_api_channel_secret
+LINE_CHANNEL_ACCESS_TOKEN=your_messaging_api_access_token
 
+# ============================================
+# LINE Login Configuration (Channel 2)
+# ============================================
+LINE_LOGIN_CHANNEL_ID=your_line_login_channel_id
+LINE_LOGIN_CHANNEL_SECRET=your_line_login_channel_secret
+LINE_LIFF_ID=your_liff_id
+
+# ============================================
+# LINE URLs
+# ============================================
 # Base URL สำหรับสร้าง QR Code
-# Development: http://localhost:3001
+# Development: http://localhost:5173
 # Production: https://your-domain.com
-LINE_BASE_URL=http://localhost:3001
+LINE_BASE_URL=http://localhost:5173
 
 # Webhook URL (Optional)
 LINE_WEBHOOK_URL=https://your-domain.com/api/line/webhook
 ```
 
 ### 3.2 แทนที่ค่าด้วย Credentials จริง
-- `LINE_CHANNEL_ID` → จาก Basic settings
-- `LINE_CHANNEL_SECRET` → จาก Basic settings
-- `LINE_CHANNEL_ACCESS_TOKEN` → จาก Messaging API (Issue token)
+
+**Messaging API Channel (Channel 1):**
+- `LINE_CHANNEL_ID` → จาก Messaging API Channel → Basic settings
+- `LINE_CHANNEL_SECRET` → จาก Messaging API Channel → Basic settings
+- `LINE_CHANNEL_ACCESS_TOKEN` → จาก Messaging API Channel → Messaging API → Issue token
+
+**LINE Login Channel (Channel 2):**
+- `LINE_LOGIN_CHANNEL_ID` → จาก LINE Login Channel → Basic settings
+- `LINE_LOGIN_CHANNEL_SECRET` → จาก LINE Login Channel → Basic settings
+- `LINE_LIFF_ID` → จาก LINE Login Channel → LINE Login → LIFF apps → LIFF ID
 
 ---
 
@@ -182,9 +234,9 @@ npm run dev
 - Production: ใช้ domain ที่มี **SSL Certificate**
 
 ### ⚠️ LINE User ID
-- LINE User ID จะได้จาก LINE Login หรือ LINE SDK
-- สำหรับการสแกน QR Code, ต้องใช้ LINE Login หรือ LINE SDK
-- ตอนนี้ใช้ placeholder (`temp_user`) สำหรับทดสอบ
+- LINE User ID จะได้จาก LINE Login (LIFF) อัตโนมัติ
+- เมื่อสแกน QR Code ผ่าน LINE App, LIFF SDK จะส่ง LINE User ID อัตโนมัติ
+- ต้องใช้ LINE Login Channel และ LIFF App เพื่อรับ LINE User ID
 
 ---
 
@@ -214,13 +266,20 @@ npm run dev
 ## ✅ Checklist
 
 - [ ] สร้าง Database table `line_notifications`
-- [ ] สร้าง LINE Provider และ Messaging API Channel
-- [ ] Copy Credentials (Channel ID, Secret, Access Token)
-- [ ] ตั้งค่า Environment Variables ใน `.env`
+- [ ] สร้าง LINE Provider
+- [ ] สร้าง Messaging API Channel (Channel 1)
+- [ ] Copy Messaging API Credentials (Channel ID, Secret, Access Token)
+- [ ] สร้าง LINE Login Channel (Channel 2)
+- [ ] Copy LINE Login Credentials (Channel ID, Secret)
+- [ ] สร้าง LIFF App ใน LINE Login Channel
+- [ ] Copy LIFF ID
+- [ ] ตั้งค่า Environment Variables ใน `.env` (ทั้ง 2 Channels)
+- [ ] ตั้งค่า `VITE_LINE_LIFF_ID` ใน Frontend `.env`
 - [ ] ติดตั้ง Dependencies (`npm install`)
 - [ ] รัน Backend Server (`npm run dev`)
+- [ ] รัน Frontend (`npm run dev`)
 - [ ] ทดสอบ Generate QR Code
-- [ ] ทดสอบสแกน QR Code ด้วย LINE
+- [ ] ทดสอบสแกน QR Code ด้วย LINE App
 - [ ] ทดสอบรับแจ้งเตือน
 
 ---

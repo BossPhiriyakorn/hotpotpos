@@ -14,6 +14,8 @@ import kitchenRoutes from './routes/kitchen.js';
 import queueRoutes from './routes/queue.js';
 import reportsRoutes from './routes/reports.js';
 import lineRoutes from './routes/line.js';
+import branchRoutes from './routes/branches.js';
+import userRoutes from './routes/users.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -90,6 +92,8 @@ app.use('/api/kitchen', kitchenRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/line', lineRoutes);
+app.use('/api/branches', branchRoutes);
+app.use('/api/users', userRoutes);
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {

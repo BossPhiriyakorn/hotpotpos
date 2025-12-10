@@ -1,17 +1,17 @@
 
 import React from 'react';
-import SecondaryButton from '../../../components/ui/SecondaryButton';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
 import { useSettings } from '../../../store/SettingsContext';
 import type { Order } from '../../../types';
+import PrimaryButton from '../../../components/ui/PrimaryButton';
+import SecondaryButton from '../../../components/ui/SecondaryButton';
 
 interface MemberScanScreenProps {
   order: Order;
-  onNoNotification: () => void;
-  onRequestNotification: () => void;
+  onReceiveNotification: () => void;
+  onSkipNotification: () => void;
 }
 
-const MemberScanScreen: React.FC<MemberScanScreenProps> = ({ order, onNoNotification, onRequestNotification }) => {
+const MemberScanScreen: React.FC<MemberScanScreenProps> = ({ order, onReceiveNotification, onSkipNotification }) => {
   const { shop } = useSettings();
 
   return (
@@ -37,23 +37,21 @@ const MemberScanScreen: React.FC<MemberScanScreenProps> = ({ order, onNoNotifica
                 </div>
             </div>
 
-            {/* Notification Options */}
-            <div className="flex gap-4 w-full max-w-lg mb-4 flex-shrink-0">
-                <button 
-                    onClick={onNoNotification}
-                    className="flex-1 bg-white border border-slate-300 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-50 transition-colors"
+            {/* Buttons */}
+            <div className="w-full max-w-lg mb-4 flex-shrink-0 space-y-4">
+                <PrimaryButton 
+                    onClick={onReceiveNotification}
+                    className="w-full py-4 text-xl"
                 >
-                    ไม่รับแจ้งเตือน
-                </button>
-                <button 
-                    onClick={onRequestNotification}
-                    className="flex-1 bg-[#BF0A30] text-white font-bold py-3 rounded-xl hover:bg-[#a00828] transition-colors"
+                    รับการแจ้งเตือน
+                </PrimaryButton>
+                <SecondaryButton 
+                    onClick={onSkipNotification}
+                    className="w-full py-4 text-xl"
                 >
-                    รับแจ้งเตือนคิว
-                </button>
+                    ไม่รับการแจ้งเตือน
+                </SecondaryButton>
             </div>
-            
-            <p className="text-sm text-slate-400 mb-8">หากต้องการรับการแจ้งเตือน Order ของคุณผ่านไลน์คลิก "รับแจ้งเตือนคิว"</p>
         </div>
     </div>
   );
