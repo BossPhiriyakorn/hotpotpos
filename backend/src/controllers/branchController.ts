@@ -64,8 +64,8 @@ export const createBranch = async (req: Request, res: Response) => {
       });
     }
     
-    // Check if name already exists
-    const nameCheck = await pool.query('SELECT id FROM branches WHERE name = $1', [name.trim()]);
+    // Check if name already exists (only active branches)
+    const nameCheck = await pool.query('SELECT id FROM branches WHERE name = $1 AND is_active = true', [name.trim()]);
     if (nameCheck.rows.length > 0) {
       return res.status(400).json({
         success: false,
@@ -73,9 +73,9 @@ export const createBranch = async (req: Request, res: Response) => {
       });
     }
     
-    // Check if code already exists (if provided)
+    // Check if code already exists (if provided, only active branches)
     if (code && code.trim() !== '') {
-      const codeCheck = await pool.query('SELECT id FROM branches WHERE code = $1', [code.trim()]);
+      const codeCheck = await pool.query('SELECT id FROM branches WHERE code = $1 AND is_active = true', [code.trim()]);
       if (codeCheck.rows.length > 0) {
         return res.status(400).json({
           success: false,
@@ -122,10 +122,10 @@ export const updateBranch = async (req: Request, res: Response) => {
       });
     }
     
-    // Check if name already exists (excluding current branch)
+    // Check if name already exists (excluding current branch, only active branches)
     if (name && name.trim() !== '') {
       const nameCheck = await pool.query(
-        'SELECT id FROM branches WHERE name = $1 AND id != $2',
+        'SELECT id FROM branches WHERE name = $1 AND id != $2 AND is_active = true',
         [name.trim(), id]
       );
       if (nameCheck.rows.length > 0) {
@@ -136,10 +136,10 @@ export const updateBranch = async (req: Request, res: Response) => {
       }
     }
     
-    // Check if code already exists (excluding current branch)
+    // Check if code already exists (excluding current branch, only active branches)
     if (code && code.trim() !== '') {
       const codeCheck = await pool.query(
-        'SELECT id FROM branches WHERE code = $1 AND id != $2',
+        'SELECT id FROM branches WHERE code = $1 AND id != $2 AND is_active = true',
         [code.trim(), id]
       );
       if (codeCheck.rows.length > 0) {

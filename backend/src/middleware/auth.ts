@@ -71,3 +71,40 @@ export const requireAdmin = (
   next();
 };
 
+// Optional authentication - decode token if present, but don't require it
+// This allows routes to work with or without authentication
+export const optionalAuthenticateToken = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  // If no token, just continue without user
+  if (!token) {
+    return next();
+  }
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    // If JWT secret not configured, just continue
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, secret) as {
+      id: number;
+      username: string;
+      userType: string;
+    };
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    // If token is invalid, just continue without user (don't return error)
+    // This allows the route to work even with invalid/expired tokens
+    next();
+  }
+};
+

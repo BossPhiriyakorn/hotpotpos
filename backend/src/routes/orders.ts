@@ -6,13 +6,13 @@ import {
   updateOrderStatus,
   getNextQueueNumber,
 } from '../controllers/orderController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public routes
+// Public routes (with optional authentication to get user info if available)
 router.get('/queue/next', getNextQueueNumber);
-router.post('/', createOrder);
+router.post('/', optionalAuthenticateToken, createOrder);
 
 // Protected routes
 router.get('/', authenticateToken, getOrders);

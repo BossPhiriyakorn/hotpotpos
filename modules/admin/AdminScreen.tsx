@@ -4,8 +4,7 @@ import Dashboard from './components/Dashboard';
 import POSManagement from './components/POSManagement';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
-import UserManagement from './components/UserManagement';
-import BranchManagement from './components/BranchManagement';
+// User/Branch management hidden (single-branch mode)
 
 // --- Icons (Solid Variants for Bolder Look) ---
 const DashboardIcon = () => (
@@ -56,7 +55,7 @@ interface AdminScreenProps {
     onBack: () => void;
 }
 
-type AdminView = 'dashboard' | 'pos' | 'report_sales' | 'report_receipts' | 'report_products' | 'report_tax' | 'settings' | 'users' | 'branches';
+type AdminView = 'dashboard' | 'pos' | 'report_sales' | 'report_receipts' | 'report_products' | 'report_tax' | 'settings';
 
 const AdminScreen: React.FC<AdminScreenProps> = ({ onBack }) => {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
@@ -67,21 +66,6 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onBack }) => {
     setCurrentView(view);
     setIsSidebarOpen(false); // Close sidebar on mobile after navigation
   };
-
-  // Listen for custom event from Settings component
-  useEffect(() => {
-    const handleNavigateEvent = (event: any) => {
-      if (event.detail === 'users') {
-        setCurrentView('users');
-        setIsSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener('navigateToView', handleNavigateEvent);
-    return () => {
-      window.removeEventListener('navigateToView', handleNavigateEvent);
-    };
-  }, []);
 
   // Logic: Selected = Red BG, White Text, Black Icon
   // Logic: Unselected = Transparent BG, Black Text, Black Icon
@@ -207,37 +191,6 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onBack }) => {
                 )}
             </div>
 
-            {/* User Management */}
-            <div className="px-4 pt-2">
-                <button 
-                    onClick={() => handleNavigate('users')}
-                    className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors border border-transparent ${getMenuClass(currentView === 'users')}`}
-                >
-                    <div className={iconClass}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                            <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.004l-.104.104a12.75 12.75 0 01-14.042 0l-.104-.104v-.004zM17.25 19.125l-.104.104a12.75 12.75 0 01-2.742-2.817 6.75 6.75 0 013.846 2.713zM9 19.125v.004a12.75 12.75 0 01-2.742 2.817 6.75 6.75 0 012.742-2.817z" />
-                        </svg>
-                    </div>
-                    <span className="ml-4 font-semibold text-lg">จัดการผู้ใช้</span>
-                </button>
-            </div>
-
-            {/* Branch Management */}
-            <div className="px-4 pt-2">
-                <button 
-                    onClick={() => handleNavigate('branches')}
-                    className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors border border-transparent ${getMenuClass(currentView === 'branches')}`}
-                >
-                    <div className={iconClass}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                            <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
-                            <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
-                        </svg>
-                    </div>
-                    <span className="ml-4 font-semibold text-lg">จัดการสาขา</span>
-                </button>
-            </div>
-
             {/* Settings */}
             <div className="px-4 pt-2">
                 <button 
@@ -284,8 +237,6 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onBack }) => {
              {currentView === 'report_receipts' && <Reports subView="receipts" />}
              {currentView === 'report_products' && <Reports subView="products" />}
              {currentView === 'report_tax' && <Reports subView="tax" />}
-             {currentView === 'users' && <UserManagement />}
-             {currentView === 'branches' && <BranchManagement />}
              {currentView === 'settings' && <Settings />}
          </div>
       </main>

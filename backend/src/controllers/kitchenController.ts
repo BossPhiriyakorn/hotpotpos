@@ -5,6 +5,52 @@ import pool from '../config/database.js';
 export const getKitchenOrders = async (req: Request, res: Response) => {
   try {
     const { status } = req.query;
+    const user = (req as any).user;
+
+    // For Kitchen/Queue/Kiosk users, MUST have branch_id
+    // Admin should not use Kitchen/Queue/Kiosk (they use CMS only)
+    let branchId: number | null = null;
+    
+    if (!user) {
+      // No user - return empty (should not happen with authenticateToken)
+      console.warn('[Kitchen] ⚠️ No user found in request');
+      return res.json({ success: true, data: [] });
+    }
+
+    // Admin should not access Kitchen/Queue/Kiosk
+    // หากเป็น admin ให้ไม่แสดงข้อมูล (ป้องกัน branch filter หลุด)
+    if (user.userType === 'admin') {
+      console.warn('[Kitchen] Admin user should not access kitchen endpoint. Returning empty.');
+      return res.json({ success: true, data: [] });
+    } else {
+      // Non-admin users (kitchen, queue, kiosk) MUST have branch_id
+      // Query database to get current branch_id (always fresh from DB)
+      const userResult = await pool.query(
+        'SELECT id, username, branch_id FROM users WHERE id = $1 AND is_active = true',
+        [user.id]
+      );
+      
+      if (userResult.rows.length === 0) {
+        console.warn(`[Kitchen] User ${user.id} not found in database`);
+        return res.json({ success: true, data: [] });
+      }
+      
+      const dbUser = userResult.rows[0];
+      branchId = dbUser.branch_id;
+      
+      // DEBUG: Log only when branch_id changes or is missing
+      if (!branchId) {
+        console.warn(`[Kitchen] User ${dbUser.username} (ID: ${dbUser.id}) has no branch_id assigned`);
+        return res.json({ 
+          success: true, 
+          data: [],
+          message: 'User has no branch assigned. Please contact administrator.' 
+        });
+      }
+      
+      // Log branch info (only once per user session or when changed)
+      console.log(`[Kitchen] ${dbUser.username} (ID: ${dbUser.id}) → Branch ID: ${branchId}`);
+    }
 
     let query = `
       SELECT 
@@ -15,6 +61,7 @@ export const getKitchenOrders = async (req: Request, res: Response) => {
         o.table_number,
         o.cooking_style,
         o.note,
+        o.branch_id,
         s.name AS soup_name,
         sl.name AS spice_level_name,
         kos.status,
@@ -35,15 +82,35 @@ export const getKitchenOrders = async (req: Request, res: Response) => {
     `;
 
     const params: any[] = [];
+    let paramCount = 1;
+
+    // Filter by branch_id if user is not admin
+    if (branchId !== null) {
+      query += ` AND o.branch_id = $${paramCount}`;
+      params.push(branchId);
+      paramCount++;
+    }
 
     if (status) {
-      query += ` AND kos.status = $1`;
+      query += ` AND kos.status = $${paramCount}`;
       params.push(status);
+      paramCount++;
     }
 
     query += ` ORDER BY o.created_at ASC`;
 
     const result = await pool.query(query, params);
+    
+    // DEBUG: Log results only if there are orders or if branch mismatch detected
+    if (result.rows.length > 0) {
+      const branchIds = [...new Set(result.rows.map(o => o.branch_id))];
+      if (branchId !== null && (branchIds.length > 1 || branchIds[0] !== branchId)) {
+        console.warn(`[Kitchen] ⚠️ Branch mismatch! Expected: ${branchId}, Found: ${branchIds.join(', ')}`);
+        console.warn(`[Kitchen] Orders:`, result.rows.map(o => ({ queue: o.queue_number, branch_id: o.branch_id })));
+      } else if (branchId !== null) {
+        console.log(`[Kitchen] Found ${result.rows.length} orders for branch ${branchId}`);
+      }
+    }
 
     // Get addons for each order
     const ordersWithAddons = await Promise.all(
@@ -72,8 +139,10 @@ export const getKitchenOrders = async (req: Request, res: Response) => {
       })
     );
 
+    console.log('=== End Kitchen Orders Debug ===\n');
     res.json({ success: true, data: ordersWithAddons });
   } catch (error: any) {
+    console.error('Kitchen Orders Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -169,23 +238,63 @@ export const updateKitchenOrderStatus = async (req: Request, res: Response) => {
 // Get kitchen stats
 export const getKitchenStats = async (req: Request, res: Response) => {
   try {
-    const queuedResult = await pool.query(
-      `SELECT COUNT(*) FROM kitchen_order_status 
-       WHERE status = 'queued' 
-       AND changed_at >= CURRENT_DATE`
-    );
+    const user = (req as any).user;
 
-    const inProgressResult = await pool.query(
-      `SELECT COUNT(*) FROM kitchen_order_status 
-       WHERE status = 'in-progress' 
-       AND changed_at >= CURRENT_DATE`
-    );
+    // Get user's branch_id if not admin
+    let branchId: number | null = null;
+    if (user && user.userType !== 'admin') {
+      const userResult = await pool.query(
+        'SELECT branch_id FROM users WHERE id = $1 AND is_active = true',
+        [user.id]
+      );
+      if (userResult.rows.length > 0 && userResult.rows[0].branch_id) {
+        branchId = userResult.rows[0].branch_id;
+      }
+    }
 
-    const doneResult = await pool.query(
-      `SELECT COUNT(*) FROM kitchen_order_status 
-       WHERE status = 'done' 
-       AND changed_at >= CURRENT_DATE`
-    );
+    // Build query with branch filter
+    let queuedQuery = `
+      SELECT COUNT(*) 
+      FROM kitchen_order_status kos
+      JOIN orders o ON kos.order_id = o.id
+      WHERE kos.status = 'queued' 
+        AND kos.changed_at >= CURRENT_DATE
+    `;
+    
+    let inProgressQuery = `
+      SELECT COUNT(*) 
+      FROM kitchen_order_status kos
+      JOIN orders o ON kos.order_id = o.id
+      WHERE kos.status = 'in-progress' 
+        AND kos.changed_at >= CURRENT_DATE
+    `;
+    
+    let doneQuery = `
+      SELECT COUNT(*) 
+      FROM kitchen_order_status kos
+      JOIN orders o ON kos.order_id = o.id
+      WHERE kos.status = 'done' 
+        AND kos.changed_at >= CURRENT_DATE
+    `;
+
+    const params: any[] = [];
+    let paramCount = 1;
+
+    // Filter by branch_id if user is not admin
+    if (branchId !== null) {
+      const branchFilter = ` AND o.branch_id = $${paramCount}`;
+      queuedQuery += branchFilter;
+      inProgressQuery += branchFilter;
+      doneQuery += branchFilter;
+      params.push(branchId);
+      paramCount++;
+    }
+
+    const [queuedResult, inProgressResult, doneResult] = await Promise.all([
+      pool.query(queuedQuery, params),
+      pool.query(inProgressQuery, params),
+      pool.query(doneQuery, params),
+    ]);
 
     res.json({
       success: true,

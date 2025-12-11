@@ -42,6 +42,7 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const branchLabel = 'ที่ร้าน';
 
   const handleSearch = async () => {
     setFilterStartDate(inputStartDate);
@@ -162,7 +163,7 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
               order.id,
               order.receiptId,
               order.channel,
-              order.branchName || 'ไม่ระบุสาขา',
+          branchLabel,
               order.total.toFixed(2),
               netSales.toFixed(2),
               order.itemCount,
@@ -177,14 +178,8 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
           ].join(',');
       });
 
-      // Get branch name for filename
-      const selectedBranch = branches.find(b => b.id.toString() === filterBranchId);
-      const branchSuffix = filterBranchId !== 'all' && selectedBranch 
-        ? `_${selectedBranch.name.replace(/\s+/g, '_')}` 
-        : '';
-      
       const csvContent = [headers.join(','), ...rows].join('\n');
-      downloadCSV(csvContent, `receipts_report_${filterStartDate}_to_${filterEndDate}${branchSuffix}.csv`);
+      downloadCSV(csvContent, `receipts_report_${filterStartDate}_to_${filterEndDate}.csv`);
   };
   
   // Group by Date for Daily Summary (Used in Tax Report logic and Export)
@@ -220,14 +215,8 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
           day.vat.toFixed(2)
       ].join(','));
 
-      // Get branch name for filename
-      const selectedBranch = branches.find(b => b.id.toString() === filterBranchId);
-      const branchSuffix = filterBranchId !== 'all' && selectedBranch 
-        ? `_${selectedBranch.name.replace(/\s+/g, '_')}` 
-        : '';
-
       const csvContent = [headers.join(','), ...rows].join('\n');
-      downloadCSV(csvContent, `tax_report_${filterStartDate}_to_${filterEndDate}${branchSuffix}.csv`);
+      downloadCSV(csvContent, `tax_report_${filterStartDate}_to_${filterEndDate}.csv`);
   };
 
 
@@ -378,21 +367,6 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                           onChange={e => setInputEndDate(e.target.value)}
                           style={{ colorScheme: 'light' }}
                         />
-                    </div>
-                    <div className="flex-1 min-w-[150px]">
-                        <label className="block text-sm font-medium text-slate-600 mb-1">สาขา</label>
-                        <select
-                          value={inputBranchId}
-                          onChange={handleBranchChange}
-                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]"
-                        >
-                          <option value="all">ทั้งหมด</option>
-                          {branches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                              {branch.name} {branch.code ? `(${branch.code})` : ''}
-                            </option>
-                          ))}
-                        </select>
                     </div>
                     <button 
                         onClick={handleSearch}
@@ -553,21 +527,6 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                           style={{ colorScheme: 'light' }}
                         />
                     </div>
-                    <div className="flex-1 min-w-[150px]">
-                        <label className="block text-sm font-medium text-slate-600 mb-1">สาขา</label>
-                        <select
-                          value={inputBranchId}
-                          onChange={handleBranchChange}
-                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]"
-                        >
-                          <option value="all">ทั้งหมด</option>
-                          {branches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                              {branch.name} {branch.code ? `(${branch.code})` : ''}
-                            </option>
-                          ))}
-                        </select>
-                    </div>
                      <button 
                         onClick={handleSearch}
                         className="w-full md:w-auto bg-slate-800 text-white px-8 py-2.5 rounded-lg font-medium hover:bg-slate-700 transition-colors"
@@ -727,59 +686,44 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
         )}
 
         {/* Filter Bar for Receipts */}
-        <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-700 mb-4">ค้นหาและสรุปยอด</h3>
-            <div className="flex flex-wrap items-end gap-4">
-                <div className="flex-1 min-w-[150px]">
-                    <label className="block text-sm font-medium text-slate-600 mb-1">ตั้งแต่วันที่</label>
-                    <input 
-                        type="date" 
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]" 
-                        value={inputStartDate} 
-                        onChange={e => setInputStartDate(e.target.value)}
-                        style={{ colorScheme: 'light' }}
-                    />
+            <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-700 mb-4">ค้นหาและสรุปยอด</h3>
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="flex-1 min-w-[180px]">
+                      <label className="block text-sm font-medium text-slate-600 mb-1">ตั้งแต่วันที่</label>
+                      <input 
+                          type="date" 
+                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]" 
+                          value={inputStartDate} 
+                          onChange={e => setInputStartDate(e.target.value)}
+                          style={{ colorScheme: 'light' }}
+                      />
+                  </div>
+                  <div className="flex-1 min-w-[180px]">
+                      <label className="block text-sm font-medium text-slate-600 mb-1">ถึงวันที่</label>
+                      <input 
+                          type="date" 
+                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]" 
+                          value={inputEndDate} 
+                          onChange={e => setInputEndDate(e.target.value)}
+                          style={{ colorScheme: 'light' }}
+                      />
+                  </div>
+                  <button 
+                      onClick={handleSearch}
+                      className="w-full md:w-auto bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-700 transition-colors md:flex-none"
+                  >
+                      ค้นหา
+                  </button>
+                  <button 
+                      onClick={handleExportReceipts}
+                      className="w-full md:w-auto flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-300 px-6 py-2.5 rounded-lg font-medium hover:bg-slate-50 hover:text-[#BF0A30] hover:border-[#BF0A30] transition-colors md:flex-none"
+                  >
+                      <DownloadIcon />
+                      <span>ดาวน์โหลด Excel</span>
+                  </button>
                 </div>
-                <div className="flex-1 min-w-[150px]">
-                    <label className="block text-sm font-medium text-slate-600 mb-1">ถึงวันที่</label>
-                    <input 
-                        type="date" 
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]" 
-                        value={inputEndDate} 
-                        onChange={e => setInputEndDate(e.target.value)}
-                        style={{ colorScheme: 'light' }}
-                    />
-                </div>
-                <div className="flex-1 min-w-[150px]">
-                    <label className="block text-sm font-medium text-slate-600 mb-1">สาขา</label>
-                    <select
-                      value={inputBranchId}
-                      onChange={handleBranchChange}
-                      className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#BF0A30]"
-                    >
-                      <option value="all">ทั้งหมด</option>
-                      {branches.map((branch) => (
-                        <option key={branch.id} value={branch.id}>
-                          {branch.name} {branch.code ? `(${branch.code})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                </div>
-                <button 
-                    onClick={handleSearch}
-                    className="w-full md:w-auto bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-700 transition-colors"
-                >
-                    ค้นหา
-                </button>
-                <button 
-                    onClick={handleExportReceipts}
-                    className="w-full md:w-auto flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-300 px-6 py-2.5 rounded-lg font-medium hover:bg-slate-50 hover:text-[#BF0A30] hover:border-[#BF0A30] transition-colors"
-                >
-                    <DownloadIcon />
-                    <span>ดาวน์โหลด Excel</span>
-                </button>
-            </div>
-            
+                
             {/* Summary Row for Receipts */}
             <div className="flex flex-col md:flex-row gap-6 mt-6 pt-6 border-t border-slate-100">
                  <div className="flex-1 bg-slate-50 p-4 rounded-lg border border-slate-200">
@@ -831,7 +775,7 @@ const Reports = ({ subView }: { subView: 'sales' | 'receipts' | 'products' | 'ta
                                     <td className="px-4 py-4 text-slate-500 whitespace-nowrap text-sm">{order.receiptId}</td>
                                     <td className="px-4 py-4 text-slate-500 whitespace-nowrap text-sm">{order.channel}</td>
                                     <td className="px-4 py-4 text-slate-700 whitespace-nowrap text-sm font-medium">
-                                      {order.branchName || 'ไม่ระบุสาขา'}
+                                      {branchLabel}
                                     </td>
                                     <td className="px-4 py-4 font-bold text-[#BF0A30] text-right whitespace-nowrap text-sm">฿{order.total.toLocaleString()}</td>
                                     <td className="px-4 py-4 text-slate-700 text-right whitespace-nowrap text-sm">฿{netSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>

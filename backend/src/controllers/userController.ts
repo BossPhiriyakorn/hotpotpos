@@ -5,13 +5,22 @@ import bcrypt from 'bcrypt';
 // Get all users
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
-      `SELECT u.id, u.username, u.user_type, u.is_active, u.branch_id,
+    const { includeInactive } = req.query;
+    
+    let query = `
+      SELECT u.id, u.username, u.user_type, u.is_active, u.branch_id,
               b.name as branch_name, b.code as branch_code
-       FROM users u
-       LEFT JOIN branches b ON u.branch_id = b.id
-       ORDER BY u.created_at DESC`
-    );
+      FROM users u
+      LEFT JOIN branches b ON u.branch_id = b.id
+    `;
+    
+    if (includeInactive !== 'true') {
+      query += ' WHERE u.is_active = true';
+    }
+    
+    query += ' ORDER BY u.created_at DESC';
+    
+    const result = await pool.query(query);
     
     res.json({
       success: true,
@@ -81,8 +90,8 @@ export const createUser = async (req: Request, res: Response) => {
       });
     }
     
-    // Check if username already exists
-    const usernameCheck = await pool.query('SELECT id FROM users WHERE username = $1', [username.trim()]);
+    // Check if username already exists (only active users)
+    const usernameCheck = await pool.query('SELECT id FROM users WHERE username = $1 AND is_active = true', [username.trim()]);
     if (usernameCheck.rows.length > 0) {
       return res.status(400).json({
         success: false,
@@ -151,10 +160,10 @@ export const updateUser = async (req: Request, res: Response) => {
       });
     }
     
-    // Check if username already exists (excluding current user)
+    // Check if username already exists (excluding current user, only active users)
     if (username && username.trim() !== '') {
       const usernameCheck = await pool.query(
-        'SELECT id FROM users WHERE username = $1 AND id != $2',
+        'SELECT id FROM users WHERE username = $1 AND id != $2 AND is_active = true',
         [username.trim(), id]
       );
       if (usernameCheck.rows.length > 0) {

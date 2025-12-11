@@ -549,28 +549,8 @@ const Settings = () => {
               </div>
             </div>
 
-            {/* Right: Access Logs & Create User */}
+            {/* Right: Access Logs */}
             <div className="flex flex-col h-full max-h-[600px] space-y-6">
-              <div>
-                <h3 className="font-bold text-slate-800 text-lg mb-4">จัดการผู้ใช้</h3>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Navigate to User Management by changing URL hash
-                    window.location.hash = 'users';
-                    // Trigger custom event for AdminScreen to handle
-                    window.dispatchEvent(new CustomEvent('navigateToView', { detail: 'users' }));
-                  }}
-                  className="block w-full bg-[#BF0A30] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#a00828] transition-colors text-center"
-                >
-                  + สร้างผู้ใช้ใหม่
-                </a>
-                <p className="text-slate-500 text-sm mt-2">
-                  สร้างผู้ใช้ใหม่พร้อมรหัสผ่านและเลือกสาขา
-                </p>
-              </div>
-              
               <div className="flex flex-col h-full max-h-[400px]">
                 <h3 className="font-bold text-slate-800 text-lg mb-4">ประวัติการเข้าใช้งาน (Access Logs)</h3>
               <div className="flex-grow border border-slate-200 rounded-xl overflow-hidden bg-slate-50 flex flex-col">

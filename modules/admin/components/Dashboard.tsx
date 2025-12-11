@@ -408,7 +408,7 @@ const Dashboard = () => {
                           {order.date} <span className="text-xs text-slate-400">({order.time})</span>
                       </td>
                       <td className="px-6 py-4 text-slate-700 whitespace-nowrap font-medium">
-                        {order.branchName || 'ไม่ระบุสาขา'}
+                        ที่ร้าน
                       </td>
                       <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{order.itemCount} รายการ</td>
                       <td className="px-6 py-4 whitespace-nowrap">

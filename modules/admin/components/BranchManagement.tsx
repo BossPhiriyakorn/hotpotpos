@@ -39,9 +39,11 @@ const BranchManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const result = await apiService.getBranches(true); // Include inactive
+      const result = await apiService.getBranches(false); // Only active branches
       // apiService.getBranches() returns the data array directly (not wrapped in { data: [...] })
-      setBranches(Array.isArray(result) ? result : []);
+      // Filter to show only active branches
+      const activeBranches = Array.isArray(result) ? result.filter((b: Branch) => b.is_active) : [];
+      setBranches(activeBranches);
     } catch (err: any) {
       console.error('Failed to fetch branches:', err);
       setError(err.message || 'Failed to load branches');

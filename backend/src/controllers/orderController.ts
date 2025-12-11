@@ -137,6 +137,18 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
 
+    // Fallback: Use default branch (สาขาหลัก) if no branch_id is provided
+    // This ensures all orders have a branch_id, even from Kiosk without authentication
+    if (!finalBranchId) {
+      const defaultBranchResult = await client.query(
+        'SELECT id FROM branches WHERE code = $1 AND is_active = true LIMIT 1',
+        ['MAIN']
+      );
+      if (defaultBranchResult.rows.length > 0) {
+        finalBranchId = defaultBranchResult.rows[0].id;
+      }
+    }
+
     // Validation
     if (!weight_grams || weight_grams <= 0) {
       throw new Error('Weight in grams must be greater than 0');

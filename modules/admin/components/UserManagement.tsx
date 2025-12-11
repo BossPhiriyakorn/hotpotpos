@@ -34,7 +34,9 @@ const UserManagement = () => {
         apiService.getBranches(),
       ]);
       
-      setUsers(usersData || []);
+      // Filter to show only active users
+      const activeUsers = Array.isArray(usersData) ? usersData.filter((u: any) => u.is_active) : [];
+      setUsers(activeUsers);
       setBranches(branchesData || []);
     } catch (err: any) {
       console.error('Failed to fetch data:', err);
@@ -176,15 +178,6 @@ const UserManagement = () => {
           <h2 className="text-3xl font-bold text-slate-800">จัดการผู้ใช้ (User Management)</h2>
           <p className="text-slate-500 mt-1">สร้าง แก้ไข และจัดการผู้ใช้ในระบบ</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="bg-[#BF0A30] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#a00828] transition-colors"
-        >
-          + สร้างผู้ใช้ใหม่
-        </button>
       </div>
 
       {/* Users Table */}
