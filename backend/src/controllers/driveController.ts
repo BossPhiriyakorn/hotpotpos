@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { drive_v3 } from 'googleapis';
 import {
   isDriveConfigured,
   getFileMediaStream,
@@ -6,6 +7,15 @@ import {
   listFilesInFolder,
   uploadImageToFolder,
 } from '../services/googleDriveService.js';
+
+type DriveListItem = drive_v3.Schema$File;
+
+/** ไฟล์จาก multer memoryStorage */
+type MemoryUploadedFile = {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+};
 
 /** สตรีมไฟล์จาก Drive ตาม File ID — Kiosk ใช้แสดงรูป (ไม่ต้องล็อกอิน) */
 export const streamDriveFile = async (req: Request, res: Response) => {
@@ -66,7 +76,7 @@ export const listDriveFolder = async (req: Request, res: Response) => {
       success: true,
       data: {
         folderId,
-        files: files.map((f) => ({
+        files: files.map((f: DriveListItem) => ({
           id: f.id,
           name: f.name,
           mimeType: f.mimeType,
@@ -100,7 +110,7 @@ export const uploadDriveImage = async (req: Request, res: Response) => {
       });
     }
 
-    const file = (req as Request & { file?: Express.Multer.File }).file;
+    const file = (req as Request & { file?: MemoryUploadedFile }).file;
     if (!file?.buffer) {
       return res.status(400).json({ success: false, error: 'No image file (field name: file)' });
     }
