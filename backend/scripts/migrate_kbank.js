@@ -5,9 +5,12 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// ใช้ postgres superuser สำหรับ migration (ALTER TABLE ต้องการ owner permission)
-// ถ้าต้องการใช้ hotpot_user แทน ให้ grant ก่อน:
-//   GRANT ALL ON TABLE orders TO hotpot_user;
+// ถ้า error: "must be owner of table orders" → รันด้วย superuser แบบ SQL แทน (แนะนำบน EC2):
+//   cd backend && bash scripts/kbank-migrate.sh
+// หรือ:
+//   sudo -u postgres psql -d YOUR_DB -v ON_ERROR_STOP=1 -v app_user=hotpot_user -f scripts/migrate_kbank.sql
+//
+// ใช้ MIGRATE_DB_USER / MIGRATE_DB_PASSWORD ถ้า user นั้นเป็น owner ของ orders ได้
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT || '5432'),

@@ -11,6 +11,36 @@
 - `deleteOrdersByDate.sql` - ลบข้อมูลออเดอร์ตามวันที่
 - `README_DELETE_ORDERS.md` - คู่มือการลบข้อมูลออเดอร์อย่างละเอียด
 
+## KBank — ถ้า `npm run db:migrate:kbank` ขึ้น `must be owner of table orders`
+
+PostgreSQL ให้เฉพาะ **owner / superuser** แก้ `orders` ได้ — user แอป (`DB_USER`) มักไม่ใช่ owner
+
+**แนะนำบน EC2 (Postgres บนเครื่องเดียวกัน):**
+
+```bash
+cd ~/hotpot/backend
+chmod +x scripts/kbank-migrate.sh scripts/kbank-verify.sh   # ครั้งแรก (ถ้าต้องการ)
+bash scripts/kbank-migrate.sh
+bash scripts/kbank-verify.sh
+```
+
+หรือรัน `psql` ตรงๆ (แก้ชื่อ DB และ user ให้ตรง `.env`):
+
+```bash
+sudo -u postgres psql -d hotpot_kiosk_db -v ON_ERROR_STOP=1 -v app_user=hotpot_user -f scripts/migrate_kbank.sql
+sudo -u postgres psql -d hotpot_kiosk_db -v ON_ERROR_STOP=1 -f scripts/verify_kbank_schema.sql
+```
+
+**Optional** — ให้แอป user เป็น owner ของ `orders` เพื่อให้ migration แบบ Node ใช้ได้ภายหลัง (รันครั้งเดียว แก้ชื่อ user ในไฟล์ให้ตรง):
+
+```bash
+sudo -u postgres psql -d hotpot_kiosk_db -v ON_ERROR_STOP=1 -v app_user=hotpot_user -f scripts/transfer_orders_owner_to_app.sql
+```
+
+ไฟล์ SQL: `migrate_kbank.sql`, `verify_kbank_schema.sql`
+
+---
+
 ## 🚀 รันบนเซิร์ฟเวอร์ (AWS ฯลฯ) แบบคำสั่งเดียว
 
 จากโฟลเดอร์ `backend` (ต้องมี `.env` ชี้ PostgreSQL แล้ว):

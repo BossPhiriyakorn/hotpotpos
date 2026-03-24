@@ -9,7 +9,9 @@
     "start": "node dist/app.js",
     "type-check": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit",
     "db:setup": "node scripts/setup-database.js",
-    "db:migrate:kbank": "node scripts/migrate_kbank.js"
+    "db:migrate:kbank": "node scripts/migrate_kbank.js",
+    "db:migrate:kbank:sql": "bash scripts/kbank-migrate.sh",
+    "db:verify:kbank": "bash scripts/kbank-verify.sh"
   },
   "dependencies": {
     "@line/bot-sdk": "^9.3.0",
