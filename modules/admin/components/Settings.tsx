@@ -160,6 +160,7 @@ const Settings = () => {
         { key: 'logo', value: shop.logo || null },
         { key: 'member_qr_code', value: shop.memberQrCode || null },
         { key: 'payment_qr_code', value: shop.paymentQrCode || null },
+        { key: 'payment_mode', value: shop.paymentMode || 'static_qr' },
         { key: 'shop_name', value: shop.name || '' },
         { key: 'welcome_title', value: shop.welcomeTitle || '' },
         { key: 'welcome_subtitle', value: shop.welcomeSubtitle || '' },
@@ -425,10 +426,7 @@ const Settings = () => {
                     name="paymentMode"
                     value="static_qr"
                     checked={shop.paymentMode === 'static_qr'}
-                    onChange={async () => {
-                      updateShop({ paymentMode: 'static_qr' });
-                      try { await apiService.updateSetting('payment_mode', 'static_qr'); } catch (e) {}
-                    }}
+                    onChange={() => updateShop({ paymentMode: 'static_qr' })}
                     className="mt-1 accent-[#BF0A30]"
                   />
                   <div>
@@ -444,10 +442,7 @@ const Settings = () => {
                     name="paymentMode"
                     value="kbank_gateway"
                     checked={shop.paymentMode === 'kbank_gateway'}
-                    onChange={async () => {
-                      updateShop({ paymentMode: 'kbank_gateway' });
-                      try { await apiService.updateSetting('payment_mode', 'kbank_gateway'); } catch (e) {}
-                    }}
+                    onChange={() => updateShop({ paymentMode: 'kbank_gateway' })}
                     className="mt-1 accent-[#BF0A30]"
                   />
                   <div>

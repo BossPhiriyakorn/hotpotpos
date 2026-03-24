@@ -235,7 +235,25 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({ order, onBack, onPaymentS
             );
         }
 
-        // Static QR / KBank idle (แสดง QR นิ่งก่อนกดชำระ)
+        // KBank idle: แสดงคำแนะนำ ไม่แสดง QR นิ่ง
+        if (paymentMode === 'kbank_gateway' && kbankStatus === 'idle') {
+            return (
+                <div className="flex flex-col items-center w-full gap-4">
+                    <div className="bg-white p-6 rounded-xl shadow-md border border-slate-200 max-w-[420px] text-center">
+                        <p className="text-2xl font-bold text-[#BF0A30] mb-2">โหมด K Payment Gateway</p>
+                        <p className="text-slate-600 text-lg">กดปุ่มชำระเงินเพื่อสร้าง QR เฉพาะรายการนี้</p>
+                        <p className="text-slate-400 text-sm mt-3">
+                            ระบบจะตรวจสอบสถานะการชำระแบบอัตโนมัติ
+                        </p>
+                    </div>
+                    <p className="text-xl text-slate-600 text-center font-medium bg-white px-6 py-2 rounded-full shadow-sm">
+                        รองรับการชำระผ่าน Mobile Banking ทุกธนาคาร
+                    </p>
+                </div>
+            );
+        }
+
+        // Static QR mode
         return (
             <div className="flex flex-col items-center w-full">
                 <div className="bg-white p-6 rounded-xl shadow-md border border-slate-200 mb-6 aspect-square max-w-[400px] flex items-center justify-center">
