@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useMenu } from '../../../store/MenuContext';
+import { useSettings } from '../../../store/SettingsContext';
 import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 import apiService from '../../../services/api';
 
@@ -51,6 +52,8 @@ const POSManagement = () => {
       addSoup, updateSoup, deleteSoup,
       addSpiceLevel, updateSpiceLevel, deleteSpiceLevel
   } = useMenu();
+  const { shop } = useSettings();
+  const menuFallbackImage = shop.logo?.trim() || '/assets/addons/shabu_placeholder.png';
   
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [modalCategory, setModalCategory] = useState<'addons' | 'soup' | 'spice'>('addons');
@@ -171,7 +174,7 @@ const POSManagement = () => {
       }
 
       if (!imageValue) {
-        imageValue = '/assets/addons/shabu_placeholder.png';
+        imageValue = menuFallbackImage;
       }
     }
 
@@ -181,7 +184,7 @@ const POSManagement = () => {
       image:
         modalCategory === 'spice'
           ? undefined
-          : imageValue || '/assets/addons/shabu_placeholder.png',
+          : imageValue || menuFallbackImage,
     };
 
     setIsSaving(true);
@@ -223,7 +226,7 @@ const POSManagement = () => {
                            {/* Image Part */}
                            <div className="w-full h-32 bg-white p-2 flex items-center justify-center relative">
                                <img 
-                                   src={editingItem.image ? resolveMediaUrl(editingItem.image) : '/assets/addons/shabu_placeholder.png'} 
+                                   src={editingItem.image ? resolveMediaUrl(editingItem.image) : resolveMediaUrl(menuFallbackImage)} 
                                    alt={editingItem.name || 'Preview'} 
                                    className="max-w-full max-h-full object-contain" 
                                />
@@ -277,7 +280,7 @@ const POSManagement = () => {
                             <div className="absolute -top-12 left-2 w-32 h-32 rounded-full bg-slate-100 shadow-md z-10 p-1">
                                 <div 
                                     className="w-full h-full rounded-full bg-cover bg-center bg-slate-100" 
-                                    style={{ backgroundImage: `url(${editingItem.image ? resolveMediaUrl(editingItem.image) : '/assets/soups/original.png'})` }} 
+                                    style={{ backgroundImage: `url(${editingItem.image ? resolveMediaUrl(editingItem.image) : resolveMediaUrl(menuFallbackImage)})` }} 
                                 />
                             </div>
                             <div className="flex-grow w-full flex items-center justify-center px-1 relative z-10 mt-2">
@@ -321,7 +324,7 @@ const POSManagement = () => {
           <div className="flex p-4 gap-4">
              {type !== 'spice' && (
                 <div className="w-20 h-20 bg-slate-100 rounded-md flex-shrink-0 overflow-hidden border border-slate-200 relative">
-                    <img src={item.image ? resolveMediaUrl(item.image) : 'https://placehold.co/100'} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.image ? resolveMediaUrl(item.image) : resolveMediaUrl(menuFallbackImage)} alt={item.name} className="w-full h-full object-cover" />
                     {item.isSpecial && (
                         <div className="absolute top-0 right-0 bg-yellow-400 p-1 rounded-bl-md shadow-sm">
                             <StarIcon />

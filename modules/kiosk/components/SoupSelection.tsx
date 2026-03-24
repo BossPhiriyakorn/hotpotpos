@@ -12,7 +12,8 @@ interface SoupSelectionProps {
 }
 
 const SoupSelection: React.FC<SoupSelectionProps> = ({ soups, onSelect, selectedSoup }) => {
-  const { layout } = useSettings();
+  const { layout, shop } = useSettings();
+  const fallbackImage = shop.logo?.trim() || '/assets/addons/shabu_placeholder.png';
   
   const handleSelectSoup = (soup: Soup) => {
     onSelect(soup);
@@ -52,7 +53,7 @@ const SoupSelection: React.FC<SoupSelectionProps> = ({ soups, onSelect, selected
                 >
                   <div 
                       className="w-full h-full rounded-full bg-cover bg-center" 
-                      style={{ backgroundImage: `url(${resolveMediaUrl(soup.image)})` }} 
+                      style={{ backgroundImage: `url(${resolveMediaUrl(soup.image || fallbackImage)})` }} 
                   />
                 </div>
 

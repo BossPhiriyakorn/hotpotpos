@@ -1,6 +1,7 @@
 
 import React from 'react';
 import type { Item } from '../../../types';
+import { useSettings } from '../../../store/SettingsContext';
 import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 
 interface AddOnSelectionProps {
@@ -11,6 +12,9 @@ interface AddOnSelectionProps {
 }
 
 const AddOnSelection: React.FC<AddOnSelectionProps> = ({ addOns, selectedAddOns, onAdd, onRemove }) => {
+  const { shop } = useSettings();
+  const fallbackImage = shop.logo?.trim() || '/assets/addons/shabu_placeholder.png';
+
   return (
     <section>
       {/* Header handled by parent */}
@@ -32,7 +36,7 @@ const AddOnSelection: React.FC<AddOnSelectionProps> = ({ addOns, selectedAddOns,
 
                 {/* Floating Image - Aligned Left */}
                 <div className="absolute -top-12 left-4 w-32 h-32 rounded-full bg-white shadow-md z-10 p-1 flex items-center justify-center">
-                   <img src={resolveMediaUrl(addOn.image)} alt={addOn.name} className="w-full h-full object-cover rounded-full bg-slate-100" />
+                   <img src={resolveMediaUrl(addOn.image || fallbackImage)} alt={addOn.name} className="w-full h-full object-cover rounded-full bg-slate-100" />
                 </div>
                 
                 {/* Content */}
