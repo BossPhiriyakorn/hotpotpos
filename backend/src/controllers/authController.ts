@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { jwtExpSecondsNextBangkok1am } from '../utils/jwtExpiryBangkok.js';
 
 // Login
 export const login = async (req: Request, res: Response) => {
@@ -51,14 +52,15 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    const exp = jwtExpSecondsNextBangkok1am();
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
         userType: user.user_type,
+        exp,
       },
-      secret,
-      { expiresIn: '24h' }
+      secret
     );
 
     // Log activity
@@ -126,9 +128,18 @@ export const getCurrentUser = async (req: any, res: Response) => {
       });
     }
 
+    const row = result.rows[0];
     res.json({
       success: true,
-      data: result.rows[0],
+      data: {
+        id: row.id,
+        username: row.username,
+        userType: row.user_type,
+        branchId: row.branch_id ?? null,
+        branchName: row.branch_name ?? null,
+        branchCode: row.branch_code ?? null,
+        isActive: row.is_active,
+      },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppRole } from './types';
 import { MenuProvider } from './store/MenuContext';
 import { SettingsProvider } from './store/SettingsContext';
 import { LanguageProvider } from './store/LanguageContext';
+import apiService from './services/api';
 
 import LoginScreen from './modules/auth/LoginScreen';
 import RoleSelectionScreen from './screens/RoleSelectionScreen';
@@ -17,6 +18,41 @@ import LineConnectScreen from './modules/line/LineConnectScreen';
 const App: React.FC = () => {
   const [user, setUser] = useState<{ type: 'standard' | 'admin' } | null>(null);
   const [role, setRole] = useState<AppRole>(AppRole.None);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!apiService.isAuthenticated()) {
+        if (!cancelled) setAuthChecked(true);
+        return;
+      }
+      try {
+        const me = await apiService.getCurrentUser();
+        if (cancelled) return;
+        const userType = me.userType === 'admin' ? 'admin' : 'standard';
+        setUser({ type: userType });
+        localStorage.setItem(
+          'auth_user',
+          JSON.stringify({
+            id: me.id,
+            username: me.username,
+            userType: me.userType,
+            branchId: me.branchId,
+            branchName: me.branchName,
+            branchCode: me.branchCode,
+          })
+        );
+      } catch {
+        if (!cancelled) apiService.logout();
+      } finally {
+        if (!cancelled) setAuthChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLoginSuccess = (userType: 'standard' | 'admin') => {
     setUser({ type: userType });
@@ -26,6 +62,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    apiService.logout();
     setUser(null);
     setRole(AppRole.None);
   };
@@ -35,6 +72,13 @@ const App: React.FC = () => {
   };
 
   const Content = () => {
+    if (!authChecked) {
+      return (
+        <div className="w-screen h-screen bg-[#BF0A30] flex items-center justify-center">
+          <p className="text-white text-lg font-medium">กำลังโหลด...</p>
+        </div>
+      );
+    }
     if (!user) {
       return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
     }
