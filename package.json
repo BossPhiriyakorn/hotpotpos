@@ -8,7 +8,7 @@
     "dev:free": "kill-port 3001 4173 5173 5174 5175 5176 5177 5178 5179 5180",
     "dev:all": "npm run dev:free && concurrently -n front,api -c cyan,magenta \"npm run dev\" \"npm run dev --prefix backend\"",
     "db:setup": "npm run db:setup --prefix backend",
-    "build": "vite build",
+    "build": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview"
   },
   "dependencies": {
