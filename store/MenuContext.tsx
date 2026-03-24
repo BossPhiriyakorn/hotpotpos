@@ -9,15 +9,15 @@ interface MenuContextType {
   spiceLevels: SpiceLevel[];
   loading: boolean;
   error: string | null;
-  addAddOn: (item: Item) => void;
-  updateAddOn: (item: Item) => void;
-  deleteAddOn: (id: number) => void;
-  addSoup: (soup: Soup) => void;
-  updateSoup: (soup: Soup) => void;
-  deleteSoup: (id: string) => void;
-  addSpiceLevel: (spice: SpiceLevel) => void;
-  updateSpiceLevel: (spice: SpiceLevel) => void;
-  deleteSpiceLevel: (id: string) => void;
+  addAddOn: (item: Item) => Promise<void>;
+  updateAddOn: (item: Item) => Promise<void>;
+  deleteAddOn: (id: number) => Promise<void>;
+  addSoup: (soup: Soup) => Promise<void>;
+  updateSoup: (soup: Soup) => Promise<void>;
+  deleteSoup: (id: string) => Promise<void>;
+  addSpiceLevel: (spice: SpiceLevel) => Promise<void>;
+  updateSpiceLevel: (spice: SpiceLevel) => Promise<void>;
+  deleteSpiceLevel: (id: string) => Promise<void>;
   refreshMenu: () => Promise<void>;
 }
 

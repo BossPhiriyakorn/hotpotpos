@@ -1,7 +1,19 @@
-
 import React, { useState, useRef } from 'react';
 import { useMenu } from '../../../store/MenuContext';
 import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
+import apiService from '../../../services/api';
+
+const isDriveMenuUploadEnabled = () =>
+  String(import.meta.env.VITE_GOOGLE_DRIVE_ENABLED || '').toLowerCase() === 'true';
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('อ่านไฟล์รูปไม่สำเร็จ'));
+    reader.readAsDataURL(file);
+  });
+}
 
 const EditIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -42,84 +54,157 @@ const POSManagement = () => {
   
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [modalCategory, setModalCategory] = useState<'addons' | 'soup' | 'spice'>('addons');
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** ไฟล์ที่เลือก — อัปโหลดจริงตอนกดบันทึก (ไม่เก็บ base64 ใน state) */
+  const pendingImageFileRef = useRef<File | null>(null);
+  const imageBlobUrlRef = useRef<string | null>(null);
+
+  const resetImageDraft = () => {
+    if (imageBlobUrlRef.current) {
+      URL.revokeObjectURL(imageBlobUrlRef.current);
+      imageBlobUrlRef.current = null;
+    }
+    pendingImageFileRef.current = null;
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const closeModal = () => {
+    resetImageDraft();
+    setEditingItem(null);
+  };
 
   const handleEdit = (item: any, type: 'addons' | 'soup' | 'spice') => {
-    setEditingItem({ ...item }); // Clone to avoid direct mutation
+    resetImageDraft();
+    setEditingItem({ ...item });
     setModalCategory(type);
   };
 
   const handleAddNew = () => {
+    resetImageDraft();
     setEditingItem({ id: null, name: '', price: 0, image: '', description: '', isSpecial: false });
-    setModalCategory(activeTab); // Default to current tab
+    setModalCategory(activeTab);
   };
 
   const handleDelete = () => {
     if (!editingItem || !editingItem.id) return;
-    
+    resetImageDraft();
     if (modalCategory === 'addons') {
-        deleteAddOn(editingItem.id);
+      void deleteAddOn(editingItem.id);
     } else if (modalCategory === 'soup') {
-        deleteSoup(editingItem.id);
+      void deleteSoup(editingItem.id);
     } else {
-        deleteSpiceLevel(editingItem.id);
+      void deleteSpiceLevel(editingItem.id);
     }
     setEditingItem(null);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-              // Convert image file to base64 string for preview/storage
-              setEditingItem({ ...editingItem, image: reader.result as string });
-          };
-          reader.readAsDataURL(file);
-      }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (imageBlobUrlRef.current) {
+      URL.revokeObjectURL(imageBlobUrlRef.current);
+      imageBlobUrlRef.current = null;
+    }
+    pendingImageFileRef.current = file;
+    const url = URL.createObjectURL(file);
+    imageBlobUrlRef.current = url;
+    setEditingItem((prev: any) => (prev ? { ...prev, image: url } : null));
   };
 
   const triggerFileUpload = () => {
       fileInputRef.current?.click();
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingItem) return;
+    if (!editingItem || isSaving) return;
 
-    // Logic to update or add
     const isNew = editingItem.id === null;
-    
-    // ID Generation logic depending on type
-    let newId;
+    let newId: number | string;
     if (isNew) {
-        if (modalCategory === 'addons') newId = Date.now();
-        else newId = Date.now().toString();
+      newId = modalCategory === 'addons' ? Date.now() : Date.now().toString();
     } else {
-        newId = editingItem.id;
+      newId = editingItem.id;
+    }
+
+    let imageValue =
+      typeof editingItem.image === 'string' ? editingItem.image.trim() : '';
+    const pendingFile = pendingImageFileRef.current;
+
+    if (modalCategory !== 'spice') {
+      if (pendingFile) {
+        if (isDriveMenuUploadEnabled()) {
+          setIsSaving(true);
+          try {
+            const { imageRef } = await apiService.uploadDriveImage(pendingFile);
+            imageValue = imageRef;
+            pendingImageFileRef.current = null;
+            if (imageBlobUrlRef.current) {
+              URL.revokeObjectURL(imageBlobUrlRef.current);
+              imageBlobUrlRef.current = null;
+            }
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          } catch (err) {
+            setIsSaving(false);
+            alert(err instanceof Error ? err.message : 'อัปโหลดรูปไป Google Drive ไม่สำเร็จ');
+            return;
+          }
+        } else {
+          setIsSaving(true);
+          try {
+            imageValue = await fileToDataUrl(pendingFile);
+          } catch (err) {
+            setIsSaving(false);
+            alert(err instanceof Error ? err.message : 'อ่านรูปไม่สำเร็จ');
+            return;
+          }
+          pendingImageFileRef.current = null;
+          if (imageBlobUrlRef.current) {
+            URL.revokeObjectURL(imageBlobUrlRef.current);
+            imageBlobUrlRef.current = null;
+          }
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      } else if (imageValue.startsWith('blob:')) {
+        imageValue = '';
+      }
+
+      if (!imageValue) {
+        imageValue = '/assets/addons/shabu_placeholder.png';
+      }
     }
 
     const finalItem = {
-        ...editingItem,
-        id: newId,
-        image: editingItem.image || (modalCategory !== 'spice' ? '/assets/addons/shabu_placeholder.png' : undefined)
+      ...editingItem,
+      id: newId,
+      image:
+        modalCategory === 'spice'
+          ? undefined
+          : imageValue || '/assets/addons/shabu_placeholder.png',
     };
 
-    if (modalCategory === 'addons') {
-        if (isNew) addAddOn(finalItem);
-        else updateAddOn(finalItem);
-    } else if (modalCategory === 'soup') {
-        if (isNew) addSoup(finalItem);
-        else updateSoup(finalItem);
-    } else {
-        if (isNew) addSpiceLevel(finalItem);
-        else updateSpiceLevel(finalItem);
-    }
+    setIsSaving(true);
+    try {
+      if (modalCategory === 'addons') {
+        if (isNew) await addAddOn(finalItem);
+        else await updateAddOn(finalItem);
+      } else if (modalCategory === 'soup') {
+        if (isNew) await addSoup(finalItem);
+        else await updateSoup(finalItem);
+      } else {
+        if (isNew) await addSpiceLevel(finalItem);
+        else await updateSpiceLevel(finalItem);
+      }
 
-    setEditingItem(null);
-    // Switch view to where the item was saved if different
-    if (modalCategory !== activeTab) {
-        setActiveTab(modalCategory);
+      resetImageDraft();
+      setEditingItem(null);
+      if (modalCategory !== activeTab) setActiveTab(modalCategory);
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -314,7 +399,7 @@ const POSManagement = () => {
                         <h3 className="text-xl font-bold text-slate-800">
                             {editingItem.id ? 'แก้ไขรายการ' : 'เพิ่มรายการใหม่'}
                         </h3>
-                        <button onClick={() => setEditingItem(null)} className="text-slate-400 hover:text-slate-600">
+                        <button type="button" onClick={closeModal} className="text-slate-400 hover:text-slate-600">
                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
@@ -443,7 +528,12 @@ const POSManagement = () => {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setEditingItem({...editingItem, image: ''})}
+                                                            onClick={() => {
+                                                              resetImageDraft();
+                                                              setEditingItem((prev: any) =>
+                                                                prev ? { ...prev, image: '' } : null
+                                                              );
+                                                            }}
                                                             className="bg-red-600 text-white px-3 py-1.5 rounded-md text-sm font-bold hover:bg-red-700"
                                                         >
                                                             ลบ
@@ -498,17 +588,19 @@ const POSManagement = () => {
                         <div className="flex gap-3">
                             <button 
                                 type="button"
-                                onClick={() => setEditingItem(null)} 
+                                onClick={closeModal} 
                                 className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition-colors"
+                                disabled={isSaving}
                             >
                                 ยกเลิก
                             </button>
                             <button 
                                 type="submit"
                                 form="pos-form"
-                                className="px-6 py-2.5 bg-[#BF0A30] text-white font-bold rounded-lg hover:bg-[#a00828] shadow-md hover:shadow-lg transition-all transform active:scale-95"
+                                disabled={isSaving}
+                                className="px-6 py-2.5 bg-[#BF0A30] text-white font-bold rounded-lg hover:bg-[#a00828] shadow-md hover:shadow-lg transition-all transform active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
                             >
-                                บันทึก
+                                {isSaving ? 'กำลังบันทึก…' : 'บันทึก'}
                             </button>
                         </div>
                     </div>
