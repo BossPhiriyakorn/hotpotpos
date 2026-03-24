@@ -20,9 +20,6 @@ function resolveCredentialsPath(): string {
   return path.isAbsolute(p) ? p : path.join(process.cwd(), p);
 }
 
-/**
- * ลูกค้า Service Account ต้องได้รับสิทธิ์บนโฟลเดอร์/ไฟล์ใน Drive (แชร์โฟลเดอร์ให้อีเมล xxx@xxx.iam.gserviceaccount.com)
- */
 export function getDriveClient(): drive_v3.Drive {
   if (!isDriveConfigured()) {
     throw new Error('Google Drive is disabled or GOOGLE_DRIVE_CREDENTIALS_PATH is missing');
@@ -56,23 +53,29 @@ export async function getFileMetadata(fileId: string) {
   const { data } = await drive.files.get({
     fileId,
     fields: 'id, name, mimeType, size',
+    supportsAllDrives: true,
   });
   return data;
 }
 
+/**
+ * สตรีมไฟล์จาก Drive (รองรับ Shared Drive ด้วย supportsAllDrives)
+ */
 export async function getFileMediaStream(fileId: string): Promise<{
   stream: Readable;
   mimeType: string;
 }> {
   const drive = getDriveClient();
+
   const meta = await drive.files.get({
     fileId,
     fields: 'mimeType',
+    supportsAllDrives: true,
   });
   const mimeType = meta.data.mimeType || 'application/octet-stream';
 
   const media = await drive.files.get(
-    { fileId, alt: 'media' },
+    { fileId, alt: 'media', supportsAllDrives: true },
     { responseType: 'stream' }
   );
 
@@ -80,7 +83,9 @@ export async function getFileMediaStream(fileId: string): Promise<{
   return { stream, mimeType };
 }
 
-/** อ่านรายการไฟล์ในโฟลเดอร์ — ใช้ Google Drive Folder ID (จาก URL) ไม่ใช่ชื่อโฟลเดอร์ */
+/**
+ * รายการไฟล์ในโฟลเดอร์ — รองรับ Shared Drive
+ */
 export async function listFilesInFolder(folderId: string) {
   const drive = getDriveClient();
   const q = `'${folderId}' in parents and trashed = false`;
@@ -89,10 +94,15 @@ export async function listFilesInFolder(folderId: string) {
     fields: 'files(id, name, mimeType, thumbnailLink, webViewLink, size)',
     pageSize: 200,
     orderBy: 'folder,name',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
   return data.files || [];
 }
 
+/**
+ * อัปโหลดรูปเข้าโฟลเดอร์ — รองรับ Shared Drive ด้วย supportsAllDrives
+ */
 export async function uploadImageToFolder(
   folderId: string,
   fileName: string,
@@ -112,6 +122,7 @@ export async function uploadImageToFolder(
       body,
     },
     fields: 'id, name',
+    supportsAllDrives: true,
   });
 
   if (!data.id) {
