@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useSettings } from '../../../store/SettingsContext';
+import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 import type { Order } from '../../../types';
 import PrimaryButton from '../../../components/ui/PrimaryButton';
 import SecondaryButton from '../../../components/ui/SecondaryButton';
@@ -24,7 +25,7 @@ const MemberScanScreen: React.FC<MemberScanScreenProps> = ({ order, onReceiveNot
             <div className="mb-10 flex-shrink-0">
                 <div className="w-[400px] h-[400px] max-w-full aspect-square flex items-center justify-center relative">
                     {shop.memberQrCode ? (
-                        <img src={shop.memberQrCode} alt="Member QR Code" className="w-full h-full object-contain" />
+                        <img src={resolveMediaUrl(shop.memberQrCode)} alt="Member QR Code" className="w-full h-full object-contain" />
                     ) : (
                         <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-32 w-32 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>

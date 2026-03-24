@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Markdown เอกสาร / โน้ตในเครื่อง (ไม่ push)
+*.md
+!README.md
+
+# Google / local secrets (อย่า commit)
+Credentials.json

@@ -11,6 +11,25 @@
 - `deleteOrdersByDate.sql` - ลบข้อมูลออเดอร์ตามวันที่
 - `README_DELETE_ORDERS.md` - คู่มือการลบข้อมูลออเดอร์อย่างละเอียด
 
+## 🚀 รันบนเซิร์ฟเวอร์ (AWS ฯลฯ) แบบคำสั่งเดียว
+
+จากโฟลเดอร์ `backend` (ต้องมี `.env` ชี้ PostgreSQL แล้ว):
+
+```bash
+npm run db:setup
+```
+
+หรือ:
+
+```bash
+node scripts/setup-database.js
+```
+
+จะรันตามลำดับ: SQL สาขา / LINE / unique constraints → `migrate_kbank.js` → `createUsers.js`  
+ดูตัวเลือก `SETUP_SKIP_*` และ `SETUP_DRY_RUN` ที่หัวไฟล์ `setup-database.js`
+
+---
+
 ## 🚀 วิธีใช้งาน
 
 ### 1. Grant Permission ใน pgAdmin (ทำครั้งเดียว)

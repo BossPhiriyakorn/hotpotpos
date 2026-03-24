@@ -2,6 +2,7 @@
 import React from 'react';
 import type { Soup } from '../../../types';
 import { useSettings } from '../../../store/SettingsContext';
+import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 // Removed SectionHeader import to let parent handle the translated title
 
 interface SoupSelectionProps {
@@ -51,7 +52,7 @@ const SoupSelection: React.FC<SoupSelectionProps> = ({ soups, onSelect, selected
                 >
                   <div 
                       className="w-full h-full rounded-full bg-cover bg-center" 
-                      style={{ backgroundImage: `url(${soup.image})` }} 
+                      style={{ backgroundImage: `url(${resolveMediaUrl(soup.image)})` }} 
                   />
                 </div>
 

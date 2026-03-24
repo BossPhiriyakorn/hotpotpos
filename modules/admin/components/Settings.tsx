@@ -4,6 +4,7 @@ import { useSettings } from '../../../store/SettingsContext';
 import { SOUPS, SPICE_LEVELS, ADD_ONS, COOKING_STYLES } from '../../../constants';
 import { AppScreen } from '../../../types';
 import apiService from '../../../services/api';
+import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 
 // Import actual components for High-Fidelity Preview
 import Header from '../../../components/ui/Header';
@@ -42,7 +43,7 @@ const CheckIcon = () => (
 
 const Settings = () => {
   const { shop, auth, layout, logs, updateShop, updateAuth, updateLayout, refreshSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState<'general' | 'member' | 'auth' | 'layout'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'member' | 'payment' | 'auth' | 'layout'>('general');
   const [showToast, setShowToast] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -222,6 +223,7 @@ const Settings = () => {
       <div className="bg-white rounded-t-xl border-b border-slate-200 flex overflow-x-auto">
         <TabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')}>ข้อมูลทั่วไป</TabButton>
         <TabButton active={activeTab === 'member'} onClick={() => setActiveTab('member')}>สะสมแต้ม</TabButton>
+        <TabButton active={activeTab === 'payment'} onClick={() => setActiveTab('payment')}>ชำระเงิน</TabButton>
         <TabButton active={activeTab === 'auth'} onClick={() => setActiveTab('auth')}>รหัสเข้าใช้งาน & Logs</TabButton>
         <TabButton active={activeTab === 'layout'} onClick={() => setActiveTab('layout')}>ปรับแต่ง Kiosk</TabButton>
       </div>
@@ -248,7 +250,7 @@ const Settings = () => {
               <div className="flex items-center gap-6">
                 <div className="w-32 h-32 rounded-full border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden relative group">
                   {shop.logo ? (
-                    <img src={shop.logo} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={resolveMediaUrl(shop.logo)} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-slate-400 text-xs">No Logo</span>
                   )}
@@ -273,61 +275,6 @@ const Settings = () => {
                     type="file"
                     ref={fileInputRef}
                     onChange={handleLogoUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <h3 className="font-bold text-slate-800 text-lg mb-4">ตั้งค่า QR Code ชำระเงิน</h3>
-              <p className="text-slate-500 mb-6">
-                อัปโหลดรูปภาพ QR Code สำหรับชำระเงิน (เช่น PromptPay, Mobile Banking) เพื่อให้ลูกค้าสแกนชำระเงิน
-              </p>
-
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="flex-shrink-0">
-                  <div className="w-64 h-64 border-2 border-dashed border-slate-300 rounded-xl bg-white flex items-center justify-center overflow-hidden relative group shadow-sm">
-                    {shop.paymentQrCode ? (
-                      <img src={shop.paymentQrCode} alt="Payment QR" className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="text-center p-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v1m6 11h2m-6 0h-2v4h-4v-2h4v-4H6v4H2v-4h4V9h4v2h2a2 2 0 012 2v1z" />
-                        </svg>
-                        <span className="text-slate-400 text-sm">No QR Code</span>
-                      </div>
-                    )}
-                    
-                    {shop.paymentQrCode && (
-                      <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
-                        <button 
-                          onClick={() => updateShop({ paymentQrCode: null })}
-                          className="text-white text-sm bg-red-600 px-3 py-1.5 rounded font-bold hover:bg-red-700 transition-colors"
-                        >
-                          ลบรูปภาพ
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-grow">
-                  <button
-                    onClick={() => paymentQrInputRef.current?.click()}
-                    className="bg-white border border-slate-300 text-slate-700 font-bold py-3 px-6 rounded-lg hover:bg-slate-50 hover:border-[#BF0A30] hover:text-[#BF0A30] transition-all w-full md:w-auto"
-                  >
-                    อัปโหลดรูปภาพ QR Code
-                  </button>
-                  <p className="text-slate-400 text-sm mt-3">
-                    รองรับไฟล์ภาพ JPG, PNG <br/>
-                    ขนาดที่แนะนำ: สี่เหลี่ยมจัตุรัส (Square)
-                  </p>
-                  <input
-                    type="file"
-                    ref={paymentQrInputRef}
-                    onChange={handlePaymentQrUpload}
                     accept="image/*"
                     className="hidden"
                   />
@@ -407,7 +354,7 @@ const Settings = () => {
                        <div className="flex-shrink-0">
                            <div className="w-64 h-64 border-2 border-dashed border-slate-300 rounded-xl bg-white flex items-center justify-center overflow-hidden relative group shadow-sm">
                                {shop.memberQrCode ? (
-                                   <img src={shop.memberQrCode} alt="Member QR" className="w-full h-full object-contain" />
+                                   <img src={resolveMediaUrl(shop.memberQrCode)} alt="Member QR" className="w-full h-full object-contain" />
                                ) : (
                                    <div className="text-center p-4">
                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -461,6 +408,134 @@ const Settings = () => {
                    </p>
                </div>
            </div>
+        )}
+
+        {/* === PAYMENT TAB === */}
+        {activeTab === 'payment' && (
+          <div className="max-w-2xl space-y-8">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+              <h3 className="font-bold text-slate-800 text-lg mb-1">โหมดการชำระเงิน</h3>
+              <p className="text-sm text-slate-500 mb-6">เลือกวิธีที่ลูกค้าจะชำระเงินที่ Kiosk</p>
+
+              <div className="space-y-3">
+                {/* Static QR */}
+                <label className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${shop.paymentMode === 'static_qr' ? 'border-[#BF0A30] bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="static_qr"
+                    checked={shop.paymentMode === 'static_qr'}
+                    onChange={async () => {
+                      updateShop({ paymentMode: 'static_qr' });
+                      try { await apiService.updateSetting('payment_mode', 'static_qr'); } catch (e) {}
+                    }}
+                    className="mt-1 accent-[#BF0A30]"
+                  />
+                  <div>
+                    <p className="font-semibold text-slate-800">QR นิ่ง (PromptPay / พร้อมเพย์)</p>
+                    <p className="text-sm text-slate-500 mt-0.5">แสดงรูป QR ที่อัปโหลดไว้ ลูกค้าสแกนแล้วกดยืนยันเอง ไม่ต้องเชื่อม API ธนาคาร</p>
+                  </div>
+                </label>
+
+                {/* KBank Gateway */}
+                <label className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${shop.paymentMode === 'kbank_gateway' ? 'border-[#BF0A30] bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="kbank_gateway"
+                    checked={shop.paymentMode === 'kbank_gateway'}
+                    onChange={async () => {
+                      updateShop({ paymentMode: 'kbank_gateway' });
+                      try { await apiService.updateSetting('payment_mode', 'kbank_gateway'); } catch (e) {}
+                    }}
+                    className="mt-1 accent-[#BF0A30]"
+                  />
+                  <div>
+                    <p className="font-semibold text-slate-800">K Payment Gateway (กสิกรไทย)</p>
+                    <p className="text-sm text-slate-500 mt-0.5">ระบบสร้าง QR อัตโนมัติต่อรายการ ตรวจสอบการชำระผ่าน API ต้องตั้งค่า KBANK_* ใน backend/.env</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* KBank config hint */}
+            {shop.paymentMode === 'kbank_gateway' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-2">
+                <p className="font-semibold text-amber-800">ตรวจสอบการตั้งค่า KBank</p>
+                <p className="text-sm text-amber-700">ต้องกรอกค่าเหล่านี้ใน <code className="bg-amber-100 px-1 rounded">backend/.env</code> ก่อนใช้งาน:</p>
+                <ul className="text-sm text-amber-700 space-y-1 ml-4 list-disc">
+                  <li><code>KBANK_ENV</code> = sandbox หรือ production</li>
+                  <li><code>KBANK_SANDBOX_API_KEY</code> / <code>KBANK_PRODUCTION_API_KEY</code></li>
+                  <li><code>KBANK_SANDBOX_MERCHANT_ID</code> / <code>KBANK_PRODUCTION_MERCHANT_ID</code></li>
+                  <li><code>KBANK_CALLBACK_URL</code> = URL ของเซิร์ฟเวอร์คุณที่ HTTPS</li>
+                </ul>
+                <p className="text-xs text-amber-600 mt-2">สมัครและรับ credentials ที่ <a href="https://apiportal.kasikornbank.com" target="_blank" rel="noopener noreferrer" className="underline">apiportal.kasikornbank.com</a></p>
+              </div>
+            )}
+
+            {/* QR Code ชำระเงิน — เฉพาะโหมด static_qr (จัดการที่แท็บนี้ที่เดียว) */}
+            {shop.paymentMode === 'static_qr' && (
+              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                <h3 className="font-bold text-slate-800 text-lg mb-4">ตั้งค่า QR Code ชำระเงิน</h3>
+                <p className="text-slate-500 mb-6">
+                  อัปโหลดรูปภาพ QR Code สำหรับชำระเงิน (เช่น PromptPay, Mobile Banking) เพื่อให้ลูกค้าสแกนชำระเงิน
+                </p>
+
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="flex-shrink-0">
+                    <div className="w-64 h-64 border-2 border-dashed border-slate-300 rounded-xl bg-white flex items-center justify-center overflow-hidden relative group shadow-sm">
+                      {shop.paymentQrCode ? (
+                        <img src={resolveMediaUrl(shop.paymentQrCode)} alt="Payment QR" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="text-center p-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v1m6 11h2m-6 0h-2v4h-4v-2h4v-4H6v4H2v-4h4V9h4v2h2a2 2 0 012 2v1z" />
+                          </svg>
+                          <span className="text-slate-400 text-sm">No QR Code</span>
+                        </div>
+                      )}
+
+                      {shop.paymentQrCode && (
+                        <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => updateShop({ paymentQrCode: null })}
+                            className="text-white text-sm bg-red-600 px-3 py-1.5 rounded font-bold hover:bg-red-700 transition-colors"
+                          >
+                            ลบรูปภาพ
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex-grow">
+                    <button
+                      type="button"
+                      onClick={() => paymentQrInputRef.current?.click()}
+                      className="bg-white border border-slate-300 text-slate-700 font-bold py-3 px-6 rounded-lg hover:bg-slate-50 hover:border-[#BF0A30] hover:text-[#BF0A30] transition-all w-full md:w-auto"
+                    >
+                      อัปโหลดรูปภาพ QR Code
+                    </button>
+                    <p className="text-slate-400 text-sm mt-3">
+                      รองรับไฟล์ภาพ JPG, PNG <br />
+                      ขนาดที่แนะนำ: สี่เหลี่ยมจัตุรัส (Square)
+                    </p>
+                    <p className="text-slate-500 text-sm mt-4">
+                      กด <span className="font-semibold text-slate-700">บันทึกการตั้งค่า</span> ด้านล่างเพื่อเก็บลงระบบ
+                    </p>
+                    <input
+                      type="file"
+                      ref={paymentQrInputRef}
+                      onChange={handlePaymentQrUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* === AUTH TAB === */}

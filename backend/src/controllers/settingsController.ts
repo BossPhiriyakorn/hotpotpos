@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database.js';
+import { isValidImageReference } from '../utils/imageReference.js';
 
 // Get all settings
 export const getSettings = async (req: Request, res: Response) => {
@@ -78,7 +79,7 @@ export const updateSetting = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate value for image settings (logo, QR codes)
+    // Validate value for image settings (logo, QR codes): data URL, https, หรือ gdrive:FILE_ID
     if ((key === 'logo' || key === 'member_qr_code' || key === 'payment_qr_code') && value) {
       if (typeof value !== 'string') {
         return res.status(400).json({
@@ -86,14 +87,13 @@ export const updateSetting = async (req: Request, res: Response) => {
           error: 'Image value must be a string',
         });
       }
-      if (!value.startsWith('data:image/')) {
+      if (!isValidImageReference(value)) {
         return res.status(400).json({
           success: false,
-          error: 'Image must be a valid base64 data URL',
+          error: 'Image must be a data URL, https URL, or gdrive:FILE_ID',
         });
       }
-      // Check size (max 15MB base64 = ~10MB actual)
-      if (value.length > 15 * 1024 * 1024) {
+      if (value.startsWith('data:image/') && value.length > 15 * 1024 * 1024) {
         return res.status(400).json({
           success: false,
           error: 'Image is too large. Maximum size is 10MB',

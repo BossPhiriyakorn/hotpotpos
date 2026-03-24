@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useSettings } from '../../../store/SettingsContext';
+import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -20,7 +21,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
         <div className="mb-16 flex flex-col items-center">
           {shop.logo && (
             <div className="w-64 h-64 mb-10 rounded-full shadow-2xl overflow-hidden border-8 border-white bg-white flex-shrink-0">
-               <img src={shop.logo} alt="Shop Logo" className="w-full h-full object-cover" />
+               <img src={resolveMediaUrl(shop.logo)} alt="Shop Logo" className="w-full h-full object-cover" />
             </div>
           )}
           <p className="text-4xl font-semibold text-[#BF0A30] mb-2 break-words max-w-full">{shop.name}</p>

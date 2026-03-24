@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useMenu } from '../../../store/MenuContext';
+import { resolveMediaUrl } from '../../../utils/resolveMediaUrl';
 
 const EditIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -137,7 +138,7 @@ const POSManagement = () => {
                            {/* Image Part */}
                            <div className="w-full h-32 bg-white p-2 flex items-center justify-center relative">
                                <img 
-                                   src={editingItem.image || '/assets/addons/shabu_placeholder.png'} 
+                                   src={editingItem.image ? resolveMediaUrl(editingItem.image) : '/assets/addons/shabu_placeholder.png'} 
                                    alt={editingItem.name || 'Preview'} 
                                    className="max-w-full max-h-full object-contain" 
                                />
@@ -191,7 +192,7 @@ const POSManagement = () => {
                             <div className="absolute -top-12 left-2 w-32 h-32 rounded-full bg-slate-100 shadow-md z-10 p-1">
                                 <div 
                                     className="w-full h-full rounded-full bg-cover bg-center bg-slate-100" 
-                                    style={{ backgroundImage: `url(${editingItem.image || '/assets/soups/original.png'})` }} 
+                                    style={{ backgroundImage: `url(${editingItem.image ? resolveMediaUrl(editingItem.image) : '/assets/soups/original.png'})` }} 
                                 />
                             </div>
                             <div className="flex-grow w-full flex items-center justify-center px-1 relative z-10 mt-2">
@@ -235,7 +236,7 @@ const POSManagement = () => {
           <div className="flex p-4 gap-4">
              {type !== 'spice' && (
                 <div className="w-20 h-20 bg-slate-100 rounded-md flex-shrink-0 overflow-hidden border border-slate-200 relative">
-                    <img src={item.image || 'https://placehold.co/100'} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.image ? resolveMediaUrl(item.image) : 'https://placehold.co/100'} alt={item.name} className="w-full h-full object-cover" />
                     {item.isSpecial && (
                         <div className="absolute top-0 right-0 bg-yellow-400 p-1 rounded-bl-md shadow-sm">
                             <StarIcon />
@@ -428,7 +429,7 @@ const POSManagement = () => {
                                             {editingItem.image ? (
                                                 <div className="relative w-full h-48 rounded-lg overflow-hidden group">
                                                     <img 
-                                                        src={editingItem.image} 
+                                                        src={resolveMediaUrl(editingItem.image)} 
                                                         alt="Preview" 
                                                         className="w-full h-full object-contain bg-white" 
                                                     />

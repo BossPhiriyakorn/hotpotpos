@@ -29,3 +29,8 @@ Thumbs.db
 # Uploads
 uploads/
 
+# Google Drive Service Account (อย่า commit ไฟล์จริง)
+config/google-drive-service-account.json
+**/google-drive*.json
+!**/google-drive*.example.json
+

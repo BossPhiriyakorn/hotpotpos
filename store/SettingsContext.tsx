@@ -3,6 +3,8 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import apiService from '../services/api';
 
 // Types
+export type PaymentMode = 'static_qr' | 'kbank_gateway';
+
 export interface ShopSettings {
   name: string;
   logo: string | null; // Data URL or path
@@ -12,6 +14,7 @@ export interface ShopSettings {
   welcomeSubtitle: string;
   tareWeight: number; // น้ำหนักภาชนะ (กรัม) - สำหรับหักลบ
   minWeight: number; // น้ำหนักขั้นต่ำ (กรัม) - จำกัดน้ำหนักขั้นต่ำ
+  paymentMode: PaymentMode; // โหมดชำระเงิน
 }
 
 export interface AuthSettings {
@@ -58,8 +61,9 @@ const DEFAULT_SHOP: ShopSettings = {
   paymentQrCode: null,
   welcomeTitle: 'ยินดีต้อนรับ',
   welcomeSubtitle: 'กดเพื่อเริ่มต้นสั่งอาหาร',
-  tareWeight: 250, // Default 250 กรัม
-  minWeight: 300, // Default 300 กรัม
+  tareWeight: 250,
+  minWeight: 300,
+  paymentMode: 'static_qr',
 };
 
 const DEFAULT_AUTH: AuthSettings = {
@@ -117,6 +121,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             welcomeSubtitle: settings.welcome_subtitle || shop.welcomeSubtitle,
             tareWeight: settings.tare_weight !== undefined ? Number(settings.tare_weight) : shop.tareWeight,
             minWeight: settings.min_weight !== undefined ? Number(settings.min_weight) : shop.minWeight,
+            paymentMode: (settings.payment_mode as PaymentMode) || shop.paymentMode,
           };
           
           const layoutSettings: Partial<LayoutSettings> = {
@@ -184,6 +189,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
           welcomeSubtitle: settings.welcome_subtitle || shop.welcomeSubtitle,
           tareWeight: settings.tare_weight !== undefined ? Number(settings.tare_weight) : shop.tareWeight,
           minWeight: settings.min_weight !== undefined ? Number(settings.min_weight) : shop.minWeight,
+          paymentMode: (settings.payment_mode as PaymentMode) || shop.paymentMode,
         };
         
         const layoutSettings: Partial<LayoutSettings> = {

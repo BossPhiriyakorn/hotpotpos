@@ -376,6 +376,48 @@ class ApiService {
       body: JSON.stringify({ orderId, lineUserId }),
     });
   }
+
+  // Payment APIs
+  async getPaymentConfig() {
+    return this.request('/api/payments/config');
+  }
+
+  async createKBankCharge(orderId: number) {
+    return this.request('/api/payments/kbank/charge', {
+      method: 'POST',
+      body: JSON.stringify({ orderId }),
+    });
+  }
+
+  async inquireKBankCharge(orderId: number) {
+    return this.request(`/api/payments/kbank/inquiry/${orderId}`);
+  }
+
+  /** Google Drive — รายการไฟล์ในโฟลเดอร์ (folderId หรือใช้ GOOGLE_DRIVE_FOLDER_ID ใน .env) */
+  async listDriveFiles(folderId?: string) {
+    const q = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';
+    return this.request(`/api/drive/list${q}`);
+  }
+
+  /** Google Drive — อัปโหลดรูป (multipart) คืน imageRef แบบ gdrive:FILE_ID */
+  async uploadDriveImage(file: File) {
+    const url = `${API_BASE_URL}/api/drive/upload`;
+    const token = localStorage.getItem('auth_token');
+    const form = new FormData();
+    form.append('file', file);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(err.error || err.message || `HTTP ${response.status}`);
+    }
+    const json = await response.json();
+    if (!json.success || !json.data) throw new Error('Invalid upload response');
+    return json.data as { id: string; name?: string; imageRef: string };
+  }
 }
 
 export const apiService = new ApiService();

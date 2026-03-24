@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database.js';
+import { isValidImageReference } from '../utils/imageReference.js';
 
 // Get all addons
 export const getAddons = async (req: Request, res: Response) => {
@@ -57,16 +58,15 @@ export const createAddon = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate image_url if provided (should be base64 data URL)
+    // Validate image_url: data URL, https, หรือ gdrive:FILE_ID
     if (image_url && typeof image_url === 'string' && image_url.length > 0) {
-      if (!image_url.startsWith('data:image/')) {
+      if (!isValidImageReference(image_url)) {
         return res.status(400).json({
           success: false,
-          error: 'Image must be a valid base64 data URL',
+          error: 'Image must be a data URL, https URL, or gdrive:FILE_ID',
         });
       }
-      // Check if base64 string is too large (max 10MB after compression)
-      if (image_url.length > 15 * 1024 * 1024) { // ~15MB base64 = ~10MB actual
+      if (image_url.startsWith('data:image/') && image_url.length > 15 * 1024 * 1024) {
         return res.status(400).json({
           success: false,
           error: 'Image is too large. Maximum size is 10MB',
@@ -126,15 +126,14 @@ export const updateAddon = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate image_url if provided
     if (image_url !== undefined && image_url !== null && image_url !== '') {
-      if (typeof image_url !== 'string' || !image_url.startsWith('data:image/')) {
+      if (typeof image_url !== 'string' || !isValidImageReference(image_url)) {
         return res.status(400).json({
           success: false,
-          error: 'Image must be a valid base64 data URL',
+          error: 'Image must be a data URL, https URL, or gdrive:FILE_ID',
         });
       }
-      if (image_url.length > 15 * 1024 * 1024) {
+      if (image_url.startsWith('data:image/') && image_url.length > 15 * 1024 * 1024) {
         return res.status(400).json({
           success: false,
           error: 'Image is too large. Maximum size is 10MB',
@@ -277,16 +276,14 @@ export const createSoup = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate image_url format
-    if (!image_url.startsWith('data:image/')) {
+    if (!isValidImageReference(image_url.trim())) {
       return res.status(400).json({
         success: false,
-        error: 'Image must be a valid base64 data URL',
+        error: 'Image must be a data URL, https URL, or gdrive:FILE_ID',
       });
     }
 
-    // Check image size
-    if (image_url.length > 15 * 1024 * 1024) {
+    if (image_url.startsWith('data:image/') && image_url.length > 15 * 1024 * 1024) {
       return res.status(400).json({
         success: false,
         error: 'Image is too large. Maximum size is 10MB',
@@ -334,15 +331,14 @@ export const updateSoup = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate image_url if provided
     if (image_url !== undefined && image_url !== null && image_url !== '') {
-      if (typeof image_url !== 'string' || !image_url.startsWith('data:image/')) {
+      if (typeof image_url !== 'string' || !isValidImageReference(image_url)) {
         return res.status(400).json({
           success: false,
-          error: 'Image must be a valid base64 data URL',
+          error: 'Image must be a data URL, https URL, or gdrive:FILE_ID',
         });
       }
-      if (image_url.length > 15 * 1024 * 1024) {
+      if (image_url.startsWith('data:image/') && image_url.length > 15 * 1024 * 1024) {
         return res.status(400).json({
           success: false,
           error: 'Image is too large. Maximum size is 10MB',

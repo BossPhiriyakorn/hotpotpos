@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:free": "kill-port 3001 4173 5173 5174 5175 5176 5177 5178 5179 5180",
+    "dev:all": "npm run dev:free && concurrently -n front,api -c cyan,magenta \"npm run dev\" \"npm run dev --prefix backend\"",
+    "db:setup": "npm run db:setup --prefix backend",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -16,6 +19,8 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.1",
+    "kill-port": "^2.0.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

@@ -16,6 +16,8 @@ import reportsRoutes from './routes/reports.js';
 import lineRoutes from './routes/line.js';
 import branchRoutes from './routes/branches.js';
 import userRoutes from './routes/users.js';
+import paymentRoutes from './routes/payments.js';
+import driveRoutes from './routes/drive.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -94,6 +96,8 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/line', lineRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/drive', driveRoutes);
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
