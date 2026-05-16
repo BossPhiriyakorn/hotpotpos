@@ -459,10 +459,10 @@ const Settings = () => {
                 <p className="font-semibold text-amber-800">ตรวจสอบการตั้งค่า KBank</p>
                 <p className="text-sm text-amber-700">ต้องกรอกค่าเหล่านี้ใน <code className="bg-amber-100 px-1 rounded">backend/.env</code> ก่อนใช้งาน:</p>
                 <ul className="text-sm text-amber-700 space-y-1 ml-4 list-disc">
-                  <li><code>KBANK_ENV</code> = sandbox หรือ production</li>
-                  <li><code>KBANK_SANDBOX_API_KEY</code> / <code>KBANK_PRODUCTION_API_KEY</code></li>
-                  <li><code>KBANK_SANDBOX_MERCHANT_ID</code> / <code>KBANK_PRODUCTION_MERCHANT_ID</code></li>
-                  <li><code>KBANK_CALLBACK_URL</code> = URL ของเซิร์ฟเวอร์คุณที่ HTTPS</li>
+                  <li><strong>Open API POS QR</strong> (แนะนำหลัง certify): <code>KBANK_CONSUMER_ID</code>, <code>KBANK_CONSUMER_SECRET</code>, <code>KBANK_PARTNER_ID</code>, <code>KBANK_PARTNER_SECRET</code>, <code>KBANK_MERCHANT_ID</code> / <code>KBANK_*_MID</code></li>
+                  <li>Sandbox เท่านั้น: <code>KBANK_INCLUDE_SANDBOX_TEST_HEADERS</code>=true และ <code>KBANK_QR_CREATE_ENV_ID</code> / <code>KBANK_QR_INQUIRY_ENV_ID</code> (ค่าตั้งต้น QR002 / QR004)</li>
+                  <li><strong>Legacy v2 x-api-key</strong> (ถ้าธนาคารให้เส้นสำรอง): ตั้ง <code>KBANK_LEGACY_KPAY_GATEWAY=true</code> + <code>KBANK_*_API_KEY</code> + <code>KBANK_*_MERCHANT_ID</code></li>
+                  <li><code>KBANK_ENV</code> = sandbox | production และ <code>KBANK_CALLBACK_URL</code>, <code>KBANK_WEBHOOK_SECRET</code> (บังคับเมื่อเข้าจริง)</li>
                 </ul>
                 <p className="text-xs text-amber-600 mt-2">สมัครและรับ credentials ที่ <a href="https://apiportal.kasikornbank.com" target="_blank" rel="noopener noreferrer" className="underline">apiportal.kasikornbank.com</a></p>
               </div>

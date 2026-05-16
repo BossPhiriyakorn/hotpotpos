@@ -29,3 +29,6 @@ dist-ssr
 
 # Google / local secrets (อย่า commit)
 Credentials.json
+
+# KBank sandbox certification lab (local only — อย่า push)
+kbank-lab/
