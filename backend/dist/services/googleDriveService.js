@@ -1,0 +1,103 @@
+import fs from 'fs';
+import path from 'path';
+import { Readable } from 'stream';
+import { google } from 'googleapis';
+const SCOPES = ['https://www.googleapis.com/auth/drive'];
+let driveClient = null;
+export function isDriveConfigured() {
+    return (process.env.GOOGLE_DRIVE_ENABLED === 'true' &&
+        !!process.env.GOOGLE_DRIVE_CREDENTIALS_PATH?.trim());
+}
+function resolveCredentialsPath() {
+    const p = process.env.GOOGLE_DRIVE_CREDENTIALS_PATH?.trim() || '';
+    if (!p)
+        throw new Error('GOOGLE_DRIVE_CREDENTIALS_PATH is not set');
+    return path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+}
+export function getDriveClient() {
+    if (!isDriveConfigured()) {
+        throw new Error('Google Drive is disabled or GOOGLE_DRIVE_CREDENTIALS_PATH is missing');
+    }
+    if (driveClient)
+        return driveClient;
+    const jsonPath = resolveCredentialsPath();
+    if (!fs.existsSync(jsonPath)) {
+        throw new Error(`Google Drive credentials file not found: ${jsonPath}`);
+    }
+    const raw = fs.readFileSync(jsonPath, 'utf8');
+    const credentials = JSON.parse(raw);
+    const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: SCOPES,
+    });
+    driveClient = google.drive({ version: 'v3', auth });
+    return driveClient;
+}
+export function getDefaultFolderId() {
+    const id = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim();
+    return id || undefined;
+}
+export async function getFileMetadata(fileId) {
+    const drive = getDriveClient();
+    const { data } = await drive.files.get({
+        fileId,
+        fields: 'id, name, mimeType, size',
+        supportsAllDrives: true,
+    });
+    return data;
+}
+/**
+ * สตรีมไฟล์จาก Drive (รองรับ Shared Drive ด้วย supportsAllDrives)
+ */
+export async function getFileMediaStream(fileId) {
+    const drive = getDriveClient();
+    const meta = await drive.files.get({
+        fileId,
+        fields: 'mimeType',
+        supportsAllDrives: true,
+    });
+    const mimeType = meta.data.mimeType || 'application/octet-stream';
+    const media = await drive.files.get({ fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream' });
+    const stream = media.data;
+    return { stream, mimeType };
+}
+/**
+ * รายการไฟล์ในโฟลเดอร์ — รองรับ Shared Drive
+ */
+export async function listFilesInFolder(folderId) {
+    const drive = getDriveClient();
+    const q = `'${folderId}' in parents and trashed = false`;
+    const { data } = await drive.files.list({
+        q,
+        fields: 'files(id, name, mimeType, thumbnailLink, webViewLink, size)',
+        pageSize: 200,
+        orderBy: 'folder,name',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+    });
+    return data.files || [];
+}
+/**
+ * อัปโหลดรูปเข้าโฟลเดอร์ — รองรับ Shared Drive ด้วย supportsAllDrives
+ */
+export async function uploadImageToFolder(folderId, fileName, mimeType, buffer) {
+    const drive = getDriveClient();
+    const body = Readable.from(buffer);
+    const { data } = await drive.files.create({
+        requestBody: {
+            name: fileName,
+            parents: [folderId],
+        },
+        media: {
+            mimeType,
+            body,
+        },
+        fields: 'id, name',
+        supportsAllDrives: true,
+    });
+    if (!data.id) {
+        throw new Error('Drive upload succeeded but no file id returned');
+    }
+    return { id: data.id, name: data.name };
+}
+//# sourceMappingURL=googleDriveService.js.map

@@ -1,0 +1,34 @@
+{
+  "name": "hotpot-kbank-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KBank Open API sandbox certification (15 exercises) — แยกจาก Hotpot backend",
+  "scripts": {
+    "01:oauth": "tsx scripts/01-oauth.ts",
+    "02:qr-thai": "tsx scripts/02-generate-thai-qr.ts",
+    "03:qr-cc": "tsx scripts/03-generate-qr-credit-card.ts",
+    "04:inquiry-requested": "tsx scripts/04-inquiry-requested.ts",
+    "05:inquiry-cancelled": "tsx scripts/05-inquiry-cancelled.ts",
+    "06:inquiry-paid": "tsx scripts/06-inquiry-paid.ts",
+    "07:inquiry-voided": "tsx scripts/07-inquiry-voided.ts",
+    "08:cancel-requested": "tsx scripts/08-cancel-requested.ts",
+    "09:cancel-paid": "tsx scripts/09-cancel-paid.ts",
+    "10:cancel-voided": "tsx scripts/10-cancel-voided.ts",
+    "11:void-paid": "tsx scripts/11-void-paid.ts",
+    "12:void-cc": "tsx scripts/12-void-qr-cc.ts",
+    "13:void-not-paid": "tsx scripts/13-void-not-paid.ts",
+    "14:void-settlement": "tsx scripts/14-void-settlement.ts",
+    "15:void-over-day": "tsx scripts/15-void-over-day.ts",
+    "config:check": "tsx scripts/config-check.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
